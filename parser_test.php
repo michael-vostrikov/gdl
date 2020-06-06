@@ -86,6 +86,53 @@ class GdlParserTestApp
         }
     }
 
+    public function assertEmpty($value, $message = 'Assert not empty is empty')
+    {
+        if (!empty($value)) {
+            dump($value);
+            throw new Exception($message);
+        }
+    }
+
+    /**
+     * Export parser result tree as string with PHP array literal definition, needed to prepare data for tests
+     * @param array $data
+     * @param int $level
+     * @return string
+     */
+    public function exportTree($data, $level = 1)
+    {
+        $str = [];
+        $indent = str_repeat('    ', $level - 1);
+        if (is_array($data[1])) {
+            $str[] = $indent . '[' . $this->exportStr($data[0]) . ', [';
+            foreach ($data[1] as $value) {
+                $str[] = $this->exportTree($value, $level + 1);
+            }
+
+            $str[] = $indent . ']],';
+        }
+        elseif (is_string($data[1])) {
+            $str[] = $indent . '[' . $this->exportStr($data[0]) . ', '
+                . $this->exportStr($data[1]) . '],';
+        }
+
+        return implode("\n", $str) . ($level === 1 ? "\n" : '');
+    }
+
+    public function exportStr($str)
+    {
+        $str = str_replace("'", "\\'", $str);
+        $str2 = str_replace("\n", "\\n", $str);
+        if ($str2 !== $str) {
+            $str = '"' . $str2 . '"';
+        }
+        else {
+            $str = "'" . $str2 . "'";
+        }
+        return $str;
+    }
+
     public function testSelfParsing()
     {
         $selfGdlFilename = __DIR__ . '/self.gdl';
@@ -101,6 +148,7 @@ class GdlParserTestApp
         echo ($t2 - $t1) . "\n";
 
         $this->assertTrue(!empty($grammar1->getArray('Rule')));
+        $this->assertEmpty($parser->getErrors());
 
         $stream->reset();
         $parser2 = new GdlParser($grammar1);
@@ -110,7 +158,51 @@ class GdlParserTestApp
         echo ($t2 - $t1) . "\n";
 
         $this->assertTrue(!empty($grammar2->getArray('Rule')));
+        $this->assertEmpty($parser2->getErrors());
 
         $this->assertTrue(($grammar1->toArray() === $grammar2->toArray()));
+    }
+
+    public function testParsingErrors()
+    {
+        $mainRuleName = 'Grammar';
+        $gdlParser = new GdlParser($this->getSelfGrammar());
+
+        $grammarSource = <<<'SRC'
+Program:
+;
+
+Test:;
+
+SRC;
+        $languageGrammar = $gdlParser->parse($mainRuleName, new Stream($grammarSource));
+        foreach ($languageGrammar->getArray('Rule') as $rule) {
+            $rule->get('RuleName')->setValue($rule->get('RuleName')->toString());
+        }
+
+        $this->assertTrue($languageGrammar->toArray() === ['Grammar', [
+            ['Rule', [
+                ['RuleName', 'Program'],
+                ['', ':'],
+                ['', ';'],
+            ]],
+            ['Rule', [
+                ['RuleName', 'Test'],
+                ['', ':'],
+                ['', ';'],
+            ]],
+        ]]);
+        $this->assertTrue($gdlParser->getErrors() === [
+            'Expected RuleBody at 2:1 (9) in Rule at 1:1 (0)',
+            'Expected RuleBody at 4:6 (17) in Rule at 4:1 (12)',
+        ]);
+
+
+        $grammarSource = <<<'SRC'
+SRC;
+        $languageGrammar = $gdlParser->parse($mainRuleName, new Stream($grammarSource));
+
+        $this->assertTrue($languageGrammar->toArray() === ['Grammar', []]);
+        $this->assertEmpty($gdlParser->getErrors());
     }
 }

@@ -103,6 +103,7 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RuleName', 'RuleName'],
                     ]],
+                    ['Cut', '!'],
                 ]],
                 ['Expression', [
                     ['Element', [
@@ -293,6 +294,12 @@ $selfGrammar = ['Grammar', [
                 ]],
                 ['Expression', [
                     ['Element', [
+                        ['RuleName', 'Cut'],
+                    ]],
+                    ['Quantifier', [['', '?']]],
+                ]],
+                ['Expression', [
+                    ['Element', [
                         ['RuleName', 'delimiter'],
                     ]],
                     ['Quantifier', [['', '*']]],
@@ -395,6 +402,20 @@ $selfGrammar = ['Grammar', [
         ]],
     ]],
     ['Rule', [
+        ['RuleName', 'Cut'],
+        ['RuleBody', [
+            ['Statement', [
+                ['Expression', [
+                    ['Element', [
+                        ['StringLiteral', [
+                            ['Symbol', [['AnySymbol', [['', '!']]]]],
+                        ]],
+                    ]],
+                ]],
+            ]],
+        ]],
+    ]],
+    ['Rule', [
         ['RuleName', 'InlineRule'],
         ['RuleBody', [
             ['Statement', [
@@ -404,6 +425,7 @@ $selfGrammar = ['Grammar', [
                             ['Symbol', [['AnySymbol', [['', '(']]]]],
                         ]],
                     ]],
+                    ['Cut', '!'],
                 ]],
                 ['Expression', [
                     ['Element', [
@@ -430,6 +452,7 @@ $selfGrammar = ['Grammar', [
                             ['Symbol', [['AnySymbol', [['', '\'']]]]],
                         ]],
                     ]],
+                    ['Cut', '!'],
                 ]],
                 ['Expression', [
                     ['Element', [
@@ -458,6 +481,7 @@ $selfGrammar = ['Grammar', [
                             ['Symbol', [['AnySymbol', [['', '[']]]]],
                         ]],
                     ]],
+                    ['Cut', '!'],
                 ]],
                 ['Expression', [
                     ['Element', [
@@ -511,6 +535,7 @@ $selfGrammar = ['Grammar', [
                                                 ['Symbol', [['AnySymbol', [['', '-']]]]],
                                             ]],
                                         ]],
+                                        ['Cut', '!'],
                                     ]],
                                     ['Expression', [
                                         ['Element', [
@@ -571,6 +596,7 @@ $selfGrammar = ['Grammar', [
                             ['Symbol', [['AnySymbol', [['', 'x']]]]],
                         ]],
                     ]],
+                    ['Cut', '!'],
                 ]],
                 ['Expression', [
                     ['Element', [
@@ -616,6 +642,7 @@ $selfGrammar = ['Grammar', [
                             ['Symbol', [['EscapedSymbol', [['AnySymbol', [['', '\\']]]]]]],
                         ]],
                     ]],
+                    ['Cut', '!'],
                 ]],
                 ['Expression', [
                     ['Element', [

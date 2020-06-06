@@ -15,6 +15,9 @@ class GdlParser
     /** @var Stream */
     protected $stream;
 
+    protected $errors = [];
+    protected $ruleCallStack = [];
+
     public function __construct(GdlNode $grammar)
     {
         $this->initRules($grammar);
@@ -28,14 +31,29 @@ class GdlParser
         }
     }
 
-    public function parse(string $mainRuleName, Stream $stream)
+    public function parse(string $mainRuleName, Stream $stream, $checkEof = true)
     {
         $this->stream = $stream;
+        $this->errors = [];
+        $this->ruleCallStack = [];
 
         $rule = $this->getRule($mainRuleName);
         $result = $this->parseRule($rule);
 
+        if ($checkEof && !$this->stream->eof()) {
+            $this->errors[] = 'Unexpected data at ' . implode(':', $this->stream->getLineAndColumn()) . ' (' . $this->stream->getPos() . ')';
+        }
+
+        if ($result === null) {
+            $this->errors[] = 'Parsing failed';
+        }
+
         return $result;
+    }
+
+    public function getErrors()
+    {
+        return $this->errors;
     }
 
     public function getRule(string $ruleName)
@@ -51,6 +69,7 @@ class GdlParser
     {
         $ruleName = $rule->get('RuleName');
         $ruleNameStr = ($ruleName !== null ? $ruleName->toString() : '()');
+        $this->ruleCallStack[] = [$ruleNameStr, $this->stream->getPos()];
 
         $parsedRule = null;
 
@@ -66,6 +85,8 @@ class GdlParser
             $this->stream->setPos($initialPos);
         }
 
+        array_pop($this->ruleCallStack);
+
         return ($parsedRule === null ? null : new GdlNode($ruleNameStr, $parsedRule));
     }
 
@@ -74,6 +95,7 @@ class GdlParser
         $parsedStatement = [];
 
         $expressionList = $statement->getArray('Expression');
+        $cut = false;
         foreach ($expressionList as $i => $expression) {
             $lookAheadElement = null;
             $lookAhead = $expression->get('LookAhead');
@@ -88,8 +110,18 @@ class GdlParser
 
             $parsedExpression = $this->parseExpression($expression, $lookAheadElement);
             if ($parsedExpression === null) {
-                $parsedStatement = null;
-                break;
+                if ($cut) {
+                    $this->handleError($expression);
+                    continue;
+                }
+                else {
+                    $parsedStatement = null;
+                    break;
+                }
+            }
+
+            if ($expression->get('Cut') !== null) {
+                $cut = true;
             }
 
             if (!empty($parsedExpression)) {
@@ -118,6 +150,24 @@ class GdlParser
         foreach ($parsedExpression as $parsedElement) {
             $parsedStatement[] = $parsedElement;
         }
+    }
+
+    protected function handleError(GdlNode $expression)
+    {
+        $elementType = $expression->get('Element')->getFirst()->getName();
+        if ($elementType === 'StringLiteral' || $elementType === 'RegexpLiteral') {
+            $name = $expression->toString();
+        }
+        else {
+            $name = $expression->get('Element')->getFirst()->toString();
+        }
+
+        $i = count($this->ruleCallStack) - 1;
+        while ($this->ruleCallStack[$i][0] == '()') { $i--; }
+        $ruleInfo = $this->ruleCallStack[$i];
+
+        $this->errors[] = 'Expected ' . $name . ' at ' . implode(':', $this->stream->getLineAndColumn()) . ' (' . $this->stream->getPos() . ')'
+            . ' in ' . $ruleInfo[0] . ' at ' . implode(':', $this->stream->getLineAndColumn($ruleInfo[1])) . ' (' . $ruleInfo[1] . ')';
     }
 
     protected function parseExpression(GdlNode $expression, ?GdlNode $lookAheadElement = null)

@@ -16,7 +16,7 @@ comment:
 ;
 
 Rule:
-    RuleName delimiter* ':' delimiter* RuleBody ';' delimiter*
+    RuleName! delimiter* ':' delimiter* RuleBody ';' delimiter*
 ;
 
 RuleName:
@@ -36,7 +36,7 @@ Statement:
 ;
 
 Expression:
-    Element Quantifier? LookAhead? delimiter*
+    Element Quantifier? LookAhead? Cut? delimiter*
 ;
 
 Element:
@@ -57,21 +57,25 @@ LookAhead:
     | '>' Element
 ;
 
+Cut:
+    '!'
+;
+
 InlineRule:
-    '(' RuleBody ')'
+    '('! RuleBody ')'
 ;
 
 StringLiteral:
-    '\'' Symbol+>> '\''
+    '\''! Symbol+>> '\''
 ;
 
 RegexpLiteral:
-    | '[' SymbolRange+>> ']'
+    | '['! SymbolRange+>> ']'
     | AnySymbolLiteral
 ;
 
 SymbolRange:
-    Symbol>']' ('-' Symbol>']')?
+    Symbol>']' ('-'! Symbol>']')?
 ;
 
 Symbol:
@@ -81,7 +85,7 @@ Symbol:
 ;
 
 HexCodeSymbol:
-    '\\x' HexDigit HexDigit
+    '\\x'! HexDigit HexDigit
 ;
 
 HexDigit:
@@ -89,7 +93,7 @@ HexDigit:
 ;
 
 EscapedSymbol:
-    '\\' AnySymbol
+    '\\'! AnySymbol
 ;
 
 AnySymbol:

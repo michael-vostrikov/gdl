@@ -205,4 +205,75 @@ SRC;
         $this->assertTrue($languageGrammar->toArray() === ['Grammar', []]);
         $this->assertEmpty($gdlParser->getErrors());
     }
+
+    public function testUtf8()
+    {
+        $mainRuleName = 'Grammar';
+        $gdlParser = new GdlParser($this->getSelfGrammar());
+
+        $grammarSource = <<<'SRC'
+Data:
+    (Word '\n')*
+;
+
+Word:
+    Utf8RussianLetter+
+;
+
+Utf8RussianLetter:
+    | [\xD0][\x90-\xBF]  /* А-Яа-п */
+    | [\xD1][\x80-\x8F]  /* р-я */
+    | [\xD0][\x01]       /* Ё */
+    | [\xD1][\x91]       /* ё */
+;
+SRC;
+        $languageGrammar = $gdlParser->parse($mainRuleName, new Stream($grammarSource));
+
+        $this->assertEmpty($gdlParser->getErrors());
+
+
+        $mainRuleName = $languageGrammar->get('Rule')->get('RuleName')->toString();
+        $languageParser = new GdlParser($languageGrammar);
+
+        $source = <<<'SRC'
+тест
+тест
+абв
+
+SRC;
+        $tree = $languageParser->parse($mainRuleName, new Stream($source));
+        foreach ($tree->getArray('Word') as $word) {
+            $word->setValue($word->toString());
+        }
+
+        $this->assertEmpty($languageParser->getErrors());
+        $this->assertTrue($tree->toArray() === ['Data', [
+            ['Word', 'тест'],
+            ['', "\n"],
+            ['Word', 'тест'],
+            ['', "\n"],
+            ['Word', 'абв'],
+            ['', "\n"],
+        ]]);
+
+
+        $source = <<<'SRC'
+тест
+test
+123
+
+SRC;
+        $tree = $languageParser->parse($mainRuleName, new Stream($source));
+        foreach ($tree->getArray('Word') as $word) {
+            $word->setValue($word->toString());
+        }
+
+        $this->assertTrue($languageParser->getErrors() === [
+            'Unexpected data at 2:1 (9)',
+        ]);
+        $this->assertTrue($tree->toArray() === ['Data', [
+            ['Word', 'тест'],
+            ['', "\n"],
+        ]]);
+    }
 }

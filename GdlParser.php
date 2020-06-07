@@ -174,10 +174,31 @@ class GdlParser
     {
         $element = $expression->get('Element');
 
+        $elementFunctionNameList = null;
+        if ($expression->get('FunctionCall') !== null) {
+            foreach ($expression->get('FunctionCall')->getArray('FunctionName') as $functionName) {
+                $elementFunctionNameList[] = $functionName->toString();
+            }
+        }
+
         $quantifier = $expression->get('Quantifier');
         $quantifierType = null;
+        $countVal = 0;
         if ($quantifier !== null) {
-            $quantifierType = $quantifier->get('')->getValue();
+            $count = $quantifier->get('Count');
+            if ($count === null) {
+                $quantifierType = $quantifier->get('')->getValue();
+            }
+            else {
+                $quantifierType = '{}';
+                if ($count->get('IntValue') !== null) {
+                    $countVal = intval($count->get('IntValue')->toString());
+                }
+                elseif ($count->get('FunctionCall') !== null) {
+                    $countFunctionName = $count->get('FunctionCall')->get('FunctionName')->toString();
+                    $countVal = $this->$countFunctionName();
+                }
+            }
         }
 
         $parsedElementList = [];
@@ -195,6 +216,14 @@ class GdlParser
             }
 
             $parsedElement = $this->parseElement($element);
+            if ($elementFunctionNameList !== null && $parsedElement !== null) {
+                foreach ($elementFunctionNameList as $elementFunctionName) {
+                    $this->$elementFunctionName($parsedElement);
+                    if ($parsedElement === null) {
+                        break;
+                    }
+                }
+            }
 
             if ($parsedElement !== null) {
                 $parsedElementList[] = $parsedElement;
@@ -204,12 +233,14 @@ class GdlParser
                 break;
             }
 
-            if ($quantifierType === null || $quantifierType === '?') {
+            if ($quantifierType === null || $quantifierType === '?' || $quantifierType === '{}' && count($parsedElementList) === $countVal) {
                 break;
             }
         }
 
-        $countDoesNotMatch = (($quantifierType === null || $quantifierType === '+') ? empty($parsedElementList) : false);
+        $countDoesNotMatch = (($quantifierType === null || $quantifierType === '+') ? empty($parsedElementList)
+            : (($quantifierType === '{}') ? count($parsedElementList) !== $countVal : false)
+        );
         if ($countDoesNotMatch) {
             $parsedElementList = null;
         }

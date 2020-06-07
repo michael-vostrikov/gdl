@@ -36,7 +36,7 @@ Statement:
 ;
 
 Expression:
-    Element Quantifier? LookAhead? Cut? delimiter*
+    Element FunctionCall? Quantifier? LookAhead? Cut? delimiter*
 ;
 
 Element:
@@ -50,6 +50,24 @@ Quantifier:
     | '*'
     | '?'
     | '+'
+    | '{' Count '}'
+;
+
+Count:
+    | IntValue
+    | FunctionCall
+;
+
+IntValue:
+    [0-9]+
+;
+
+FunctionCall:
+    '={'! FunctionName (',' FunctionName)* '}'
+;
+
+FunctionName:
+    ID
 ;
 
 LookAhead:

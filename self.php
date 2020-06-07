@@ -282,6 +282,12 @@ $selfGrammar = ['Grammar', [
                 ]],
                 ['Expression', [
                     ['Element', [
+                        ['RuleName', 'FunctionCall'],
+                    ]],
+                    ['Quantifier', [['', '?']]],
+                ]],
+                ['Expression', [
+                    ['Element', [
                         ['RuleName', 'Quantifier'],
                     ]],
                     ['Quantifier', [['', '?']]],
@@ -367,6 +373,127 @@ $selfGrammar = ['Grammar', [
                         ['StringLiteral', [
                             ['Symbol', [['AnySymbol', [['', '+']]]]],
                         ]],
+                    ]],
+                ]],
+            ]],
+            ['Statement', [
+                ['Expression', [
+                    ['Element', [
+                        ['StringLiteral', [
+                            ['Symbol', [['AnySymbol', [['', '{']]]]],
+                        ]],
+                    ]],
+                ]],
+                ['Expression', [
+                    ['Element', [
+                        ['RuleName', 'Count'],
+                    ]],
+                ]],
+                ['Expression', [
+                    ['Element', [
+                        ['StringLiteral', [
+                            ['Symbol', [['AnySymbol', [['', '}']]]]],
+                        ]],
+                    ]],
+                ]],
+            ]],
+        ]],
+    ]],
+    ['Rule', [
+        ['RuleName', 'Count'],
+        ['RuleBody', [
+            ['Statement', [
+                ['Expression', [
+                    ['Element', [
+                        ['RuleName', 'IntValue'],
+                    ]],
+                ]],
+            ]],
+            ['Statement', [
+                ['Expression', [
+                    ['Element', [
+                        ['RuleName', 'FunctionCall'],
+                    ]],
+                ]],
+            ]],
+        ]],
+    ]],
+    ['Rule', [
+        ['RuleName', 'IntValue'],
+        ['RuleBody', [
+            ['Statement', [
+                ['Expression', [
+                    ['Element', [
+                        ['RegexpLiteral', [
+                            ['SymbolRange', [
+                                ['Symbol', [['AnySymbol', [['', '0']]]]],
+                                ['Symbol', [['AnySymbol', [['', '9']]]]],
+                            ]],
+                        ]],
+                    ]],
+                    ['Quantifier', [['', '+']]],
+                ]],
+            ]],
+        ]],
+    ]],
+    ['Rule', [
+        ['RuleName', 'FunctionCall'],
+        ['RuleBody', [
+            ['Statement', [
+                ['Expression', [
+                    ['Element', [
+                        ['StringLiteral', [
+                            ['Symbol', [['AnySymbol', [['', '=']]]]],
+                            ['Symbol', [['AnySymbol', [['', '{']]]]],
+                        ]],
+                    ]],
+                    ['Cut', '!'],
+                ]],
+                ['Expression', [
+                    ['Element', [
+                        ['RuleName', 'FunctionName'],
+                    ]],
+                ]],
+                ['Expression', [
+                    ['Element', [
+                        ['InlineRule', [
+                            ['RuleBody', [
+                                ['Statement', [
+                                    ['Expression', [
+                                        ['Element', [
+                                            ['StringLiteral', [
+                                                ['Symbol', [['AnySymbol', [['', ',']]]]],
+                                            ]],
+                                        ]],
+                                    ]],
+                                    ['Expression', [
+                                        ['Element', [
+                                            ['RuleName', 'FunctionName'],
+                                        ]],
+                                    ]],
+                                ]],
+                            ]],
+                        ]],
+                    ]],
+                    ['Quantifier', [['', '*']]],
+                ]],
+                ['Expression', [
+                    ['Element', [
+                        ['StringLiteral', [
+                            ['Symbol', [['AnySymbol', [['', '}']]]]],
+                        ]],
+                    ]],
+                ]],
+            ]],
+        ]],
+    ]],
+    ['Rule', [
+        ['RuleName', 'FunctionName'],
+        ['RuleBody', [
+            ['Statement', [
+                ['Expression', [
+                    ['Element', [
+                        ['RuleName', 'ID'],
                     ]],
                 ]],
             ]],

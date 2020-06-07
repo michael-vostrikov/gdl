@@ -276,4 +276,123 @@ SRC;
             ['', "\n"],
         ]]);
     }
+
+    public function testCount()
+    {
+        $mainRuleName = 'Grammar';
+        $gdlParser = new GdlParser($this->getSelfGrammar());
+
+        $grammarSource = <<<'SRC'
+Data:
+    Count={setCount} '\n' Element{={getCount}}
+;
+
+Count:
+    [0-9]{4}
+;
+
+Element:
+    [a-zA-Z0-9]+ '\n'
+;
+SRC;
+        $languageGrammar = $gdlParser->parse($mainRuleName, new Stream($grammarSource));
+
+        $this->assertEmpty($gdlParser->getErrors());
+
+
+        $mainRuleName = $languageGrammar->get('Rule')->get('RuleName')->toString();
+
+        $languageParser = new class($languageGrammar) extends GdlParser {
+            protected $cnt;
+
+            public function setCount(GdlNode &$parsedElement)
+            {
+                $this->cnt = intval($parsedElement->toString());
+            }
+
+            public function getCount(): int
+            {
+                return $this->cnt;
+            }
+        };
+
+
+        $source = <<<'SRC'
+0006
+Element1
+Element2
+Element3
+Element4
+Element5
+Element6
+
+SRC;
+        $tree = $languageParser->parse($mainRuleName, new Stream($source));
+        $tree->get('Count')->setValue($tree->get('Count')->toString());
+        $tree->get('')->setValue($tree->get('')->toString());
+        foreach ($tree->getArray('Element') as $element) {
+            $element->setValue($element->toString());
+        }
+
+        $this->assertEmpty($languageParser->getErrors());
+        $this->assertTrue($tree->toArray() === ['Data', [
+            ['Count', '0006'],
+            ['', "\n"],
+            ['Element', "Element1\n"],
+            ['Element', "Element2\n"],
+            ['Element', "Element3\n"],
+            ['Element', "Element4\n"],
+            ['Element', "Element5\n"],
+            ['Element', "Element6\n"],
+        ]]);
+
+
+        $source = <<<'SRC'
+0006
+Element1
+Element2
+Element3
+
+SRC;
+        $tree = $languageParser->parse($mainRuleName, new Stream($source));
+
+        $this->assertTrue($tree === null);
+        $this->assertTrue($languageParser->getErrors() === [
+            'Unexpected data at 1:1 (0)',
+            'Parsing failed',
+        ]);
+
+
+        $source = <<<'SRC'
+0006
+Element1
+Element2
+Element3
+Element4
+Element5
+Element6
+Element7
+
+SRC;
+        $tree = $languageParser->parse($mainRuleName, new Stream($source));
+        $tree->get('Count')->setValue($tree->get('Count')->toString());
+        $tree->get('')->setValue($tree->get('')->toString());
+        foreach ($tree->getArray('Element') as $element) {
+            $element->setValue($element->toString());
+        }
+
+        $this->assertTrue($tree->toArray() === ['Data', [
+            ['Count', '0006'],
+            ['', "\n"],
+            ['Element', "Element1\n"],
+            ['Element', "Element2\n"],
+            ['Element', "Element3\n"],
+            ['Element', "Element4\n"],
+            ['Element', "Element5\n"],
+            ['Element', "Element6\n"],
+        ]]);
+        $this->assertTrue($languageParser->getErrors() === [
+            'Unexpected data at 8:1 (59)',
+        ]);
+    }
 }

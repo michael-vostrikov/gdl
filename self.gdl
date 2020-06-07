@@ -16,7 +16,7 @@ comment:
 ;
 
 Rule:
-    RuleName! delimiter* ':' delimiter* RuleBody ';' delimiter*
+    RuleName={str}! delimiter* ':' delimiter* RuleBody ';' delimiter*
 ;
 
 RuleName:
@@ -40,7 +40,7 @@ Expression:
 ;
 
 Element:
-    | RuleName
+    | RuleName={str}
     | StringLiteral
     | RegexpLiteral
     | InlineRule
@@ -54,7 +54,7 @@ Quantifier:
 ;
 
 Count:
-    | IntValue
+    | IntValue={str}
     | FunctionCall
 ;
 
@@ -63,7 +63,7 @@ IntValue:
 ;
 
 FunctionCall:
-    '={'! FunctionName (',' FunctionName)* '}'
+    '={'! FunctionName={str} (',' FunctionName={str})* '}'
 ;
 
 FunctionName:
@@ -84,7 +84,7 @@ InlineRule:
 ;
 
 StringLiteral:
-    '\''! Symbol+>> '\''
+    '\''! Symbol={symbolStr}+>> '\''
 ;
 
 RegexpLiteral:
@@ -93,7 +93,7 @@ RegexpLiteral:
 ;
 
 SymbolRange:
-    Symbol>']' ('-'! Symbol>']')?
+    Symbol={symbolStr}>']' ('-'! Symbol={symbolStr}>']')?
 ;
 
 Symbol:

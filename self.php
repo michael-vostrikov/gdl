@@ -47,16 +47,16 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RegexpLiteral', [
                             ['SymbolRange', [
-                                ['Symbol', [['AnySymbol', [['', ' ']]]]],
+                                ['Symbol', " "],
                             ]],
                             ['SymbolRange', [
-                                ['Symbol', [['EscapedSymbol', [['AnySymbol', [['', 'n']]]]]]],
+                                ['Symbol', "\n"],
                             ]],
                             ['SymbolRange', [
-                                ['Symbol', [['EscapedSymbol', [['AnySymbol', [['', 't']]]]]]],
+                                ['Symbol', "\t"],
                             ]],
                             ['SymbolRange', [
-                                ['Symbol', [['EscapedSymbol', [['AnySymbol', [['', 'r']]]]]]],
+                                ['Symbol', "\r"],
                             ]],
                         ]],
                     ]],
@@ -72,8 +72,8 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '/']]]]],
-                            ['Symbol', [['AnySymbol', [['', '*']]]]],
+                            ['Symbol', '/'],
+                            ['Symbol', '*'],
                         ]],
                     ]],
                 ]],
@@ -87,8 +87,8 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '*']]]]],
-                            ['Symbol', [['AnySymbol', [['', '/']]]]],
+                            ['Symbol', '*'],
+                            ['Symbol', '/'],
                         ]],
                     ]],
                 ]],
@@ -103,6 +103,7 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RuleName', 'RuleName'],
                     ]],
+                    ['FunctionCall', [['FunctionName', 'str']]],
                     ['Cut', '!'],
                 ]],
                 ['Expression', [
@@ -114,7 +115,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', ':']]]]],
+                            ['Symbol', ':'],
                         ]],
                     ]],
                 ]],
@@ -132,7 +133,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', ';']]]]],
+                            ['Symbol', ';'],
                         ]],
                     ]],
                 ]],
@@ -165,15 +166,15 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RegexpLiteral', [
                             ['SymbolRange', [
-                                ['Symbol', [['AnySymbol', [['', 'a']]]]],
-                                ['Symbol', [['AnySymbol', [['', 'z']]]]],
+                                ['Symbol', 'a'],
+                                ['Symbol', 'z'],
                             ]],
                             ['SymbolRange', [
-                                ['Symbol', [['AnySymbol', [['', 'A']]]]],
-                                ['Symbol', [['AnySymbol', [['', 'Z']]]]],
+                                ['Symbol', 'A'],
+                                ['Symbol', 'Z'],
                             ]],
                             ['SymbolRange', [
-                                ['Symbol', [['AnySymbol', [['', '_']]]]],
+                                ['Symbol', '_'],
                             ]],
                         ]],
                     ]],
@@ -182,19 +183,19 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RegexpLiteral', [
                             ['SymbolRange', [
-                                ['Symbol', [['AnySymbol', [['', 'a']]]]],
-                                ['Symbol', [['AnySymbol', [['', 'z']]]]],
+                                ['Symbol', 'a'],
+                                ['Symbol', 'z'],
                             ]],
                             ['SymbolRange', [
-                                ['Symbol', [['AnySymbol', [['', 'A']]]]],
-                                ['Symbol', [['AnySymbol', [['', 'Z']]]]],
+                                ['Symbol', 'A'],
+                                ['Symbol', 'Z'],
                             ]],
                             ['SymbolRange', [
-                                ['Symbol', [['AnySymbol', [['', '_']]]]],
+                                ['Symbol', '_'],
                             ]],
                             ['SymbolRange', [
-                                ['Symbol', [['AnySymbol', [['', '0']]]]],
-                                ['Symbol', [['AnySymbol', [['', '9']]]]],
+                                ['Symbol', '0'],
+                                ['Symbol', '9'],
                             ]],
                         ]],
                     ]],
@@ -210,7 +211,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '|']]]]],
+                            ['Symbol', '|'],
                         ]],
                     ]],
                     ['Quantifier', [['', '?']]],
@@ -234,7 +235,7 @@ $selfGrammar = ['Grammar', [
                                     ['Expression', [
                                         ['Element', [
                                             ['StringLiteral', [
-                                                ['Symbol', [['AnySymbol', [['', '|']]]]],
+                                                ['Symbol', '|'],
                                             ]],
                                         ]],
                                     ]],
@@ -321,6 +322,7 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RuleName', 'RuleName'],
                     ]],
+                    ['FunctionCall', [['FunctionName', 'str']]],
                 ]],
             ]],
             ['Statement', [
@@ -353,7 +355,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '*']]]]],
+                            ['Symbol', '*'],
                         ]],
                     ]],
                 ]],
@@ -362,7 +364,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '?']]]]],
+                            ['Symbol', '?'],
                         ]],
                     ]],
                 ]],
@@ -371,7 +373,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '+']]]]],
+                            ['Symbol', '+'],
                         ]],
                     ]],
                 ]],
@@ -380,7 +382,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '{']]]]],
+                            ['Symbol', '{'],
                         ]],
                     ]],
                 ]],
@@ -392,7 +394,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '}']]]]],
+                            ['Symbol', '}'],
                         ]],
                     ]],
                 ]],
@@ -407,6 +409,7 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RuleName', 'IntValue'],
                     ]],
+                    ['FunctionCall', [['FunctionName', 'str']]],
                 ]],
             ]],
             ['Statement', [
@@ -426,8 +429,8 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RegexpLiteral', [
                             ['SymbolRange', [
-                                ['Symbol', [['AnySymbol', [['', '0']]]]],
-                                ['Symbol', [['AnySymbol', [['', '9']]]]],
+                                ['Symbol', '0'],
+                                ['Symbol', '9'],
                             ]],
                         ]],
                     ]],
@@ -443,8 +446,8 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '=']]]]],
-                            ['Symbol', [['AnySymbol', [['', '{']]]]],
+                            ['Symbol', '='],
+                            ['Symbol', '{'],
                         ]],
                     ]],
                     ['Cut', '!'],
@@ -453,6 +456,7 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RuleName', 'FunctionName'],
                     ]],
+                    ['FunctionCall', [['FunctionName', 'str']]],
                 ]],
                 ['Expression', [
                     ['Element', [
@@ -462,7 +466,7 @@ $selfGrammar = ['Grammar', [
                                     ['Expression', [
                                         ['Element', [
                                             ['StringLiteral', [
-                                                ['Symbol', [['AnySymbol', [['', ',']]]]],
+                                                ['Symbol', ','],
                                             ]],
                                         ]],
                                     ]],
@@ -470,6 +474,7 @@ $selfGrammar = ['Grammar', [
                                         ['Element', [
                                             ['RuleName', 'FunctionName'],
                                         ]],
+                                        ['FunctionCall', [['FunctionName', 'str']]],
                                     ]],
                                 ]],
                             ]],
@@ -480,7 +485,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '}']]]]],
+                            ['Symbol', '}'],
                         ]],
                     ]],
                 ]],
@@ -506,8 +511,8 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '>']]]]],
-                            ['Symbol', [['AnySymbol', [['', '>']]]]],
+                            ['Symbol', '>'],
+                            ['Symbol', '>'],
                         ]],
                     ]],
                 ]],
@@ -516,7 +521,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '>']]]]],
+                            ['Symbol', '>'],
                         ]],
                     ]],
                 ]],
@@ -535,7 +540,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '!']]]]],
+                            ['Symbol', '!'],
                         ]],
                     ]],
                 ]],
@@ -549,7 +554,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '(']]]]],
+                            ['Symbol', '('],
                         ]],
                     ]],
                     ['Cut', '!'],
@@ -562,7 +567,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', ')']]]]],
+                            ['Symbol', ')'],
                         ]],
                     ]],
                 ]],
@@ -576,7 +581,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '\'']]]]],
+                            ['Symbol', '\''],
                         ]],
                     ]],
                     ['Cut', '!'],
@@ -585,13 +590,14 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RuleName', 'Symbol'],
                     ]],
+                    ['FunctionCall', [['FunctionName', 'symbolStr']]],
                     ['Quantifier', [['', '+']]],
                     ['LookAhead', [['', '>>']]],
                 ]],
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '\'']]]]],
+                            ['Symbol', '\''],
                         ]],
                     ]],
                 ]],
@@ -605,7 +611,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '[']]]]],
+                            ['Symbol', '['],
                         ]],
                     ]],
                     ['Cut', '!'],
@@ -620,7 +626,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', ']']]]]],
+                            ['Symbol', ']'],
                         ]],
                     ]],
                 ]],
@@ -642,11 +648,12 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RuleName', 'Symbol'],
                     ]],
+                    ['FunctionCall', [['FunctionName', 'symbolStr']]],
                     ['LookAhead', [
                         ['', '>'],
                         ['Element', [
                             ['StringLiteral', [
-                                ['Symbol', [['AnySymbol', [['', ']']]]]],
+                                ['Symbol', ']'],
                             ]],
                         ]],
                     ]],
@@ -659,7 +666,7 @@ $selfGrammar = ['Grammar', [
                                     ['Expression', [
                                         ['Element', [
                                             ['StringLiteral', [
-                                                ['Symbol', [['AnySymbol', [['', '-']]]]],
+                                                ['Symbol', '-'],
                                             ]],
                                         ]],
                                         ['Cut', '!'],
@@ -668,11 +675,12 @@ $selfGrammar = ['Grammar', [
                                         ['Element', [
                                             ['RuleName', 'Symbol'],
                                         ]],
+                                        ['FunctionCall', [['FunctionName', 'symbolStr']]],
                                         ['LookAhead', [
                                             ['', '>'],
                                             ['Element', [
                                                 ['StringLiteral', [
-                                                    ['Symbol', [['AnySymbol', [['', ']']]]]],
+                                                    ['Symbol', ']'],
                                                 ]],
                                             ]],
                                         ]],
@@ -719,8 +727,8 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['EscapedSymbol', [['AnySymbol', [['', '\\']]]]]]],
-                            ['Symbol', [['AnySymbol', [['', 'x']]]]],
+                            ['Symbol', '\\'],
+                            ['Symbol', 'x'],
                         ]],
                     ]],
                     ['Cut', '!'],
@@ -746,12 +754,12 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RegexpLiteral', [
                             ['SymbolRange', [
-                                ['Symbol', [['AnySymbol', [['', '0']]]]],
-                                ['Symbol', [['AnySymbol', [['', '9']]]]],
+                                ['Symbol', '0'],
+                                ['Symbol', '9'],
                             ]],
                             ['SymbolRange', [
-                                ['Symbol', [['AnySymbol', [['', 'A']]]]],
-                                ['Symbol', [['AnySymbol', [['', 'F']]]]],
+                                ['Symbol', 'A'],
+                                ['Symbol', 'F'],
                             ]],
                         ]],
                     ]],
@@ -766,7 +774,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['EscapedSymbol', [['AnySymbol', [['', '\\']]]]]]],
+                            ['Symbol', '\\'],
                         ]],
                     ]],
                     ['Cut', '!'],
@@ -800,7 +808,7 @@ $selfGrammar = ['Grammar', [
                 ['Expression', [
                     ['Element', [
                         ['StringLiteral', [
-                            ['Symbol', [['AnySymbol', [['', '.']]]]],
+                            ['Symbol', '.'],
                         ]],
                     ]],
                 ]],

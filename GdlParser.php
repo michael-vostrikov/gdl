@@ -27,7 +27,7 @@ class GdlParser
     {
         $this->ruleMap = [];
         foreach ($grammar->getArray('Rule') as $rule) {
-            $this->ruleMap[$rule->get('RuleName')->toString()] = $rule;
+            $this->ruleMap[$rule->get('RuleName')->getValue()] = $rule;
         }
     }
 
@@ -68,7 +68,7 @@ class GdlParser
     protected function parseRule(GdlNode $rule)
     {
         $ruleName = $rule->get('RuleName');
-        $ruleNameStr = ($ruleName !== null ? $ruleName->toString() : '()');
+        $ruleNameStr = ($ruleName !== null ? $ruleName->getValue() : '()');
         $this->ruleCallStack[] = [$ruleNameStr, $this->stream->getPos()];
 
         $parsedRule = null;
@@ -177,7 +177,7 @@ class GdlParser
         $elementFunctionNameList = null;
         if ($expression->get('FunctionCall') !== null) {
             foreach ($expression->get('FunctionCall')->getArray('FunctionName') as $functionName) {
-                $elementFunctionNameList[] = $functionName->toString();
+                $elementFunctionNameList[] = $functionName->getValue();
             }
         }
 
@@ -192,10 +192,10 @@ class GdlParser
             else {
                 $quantifierType = '{}';
                 if ($count->get('IntValue') !== null) {
-                    $countVal = intval($count->get('IntValue')->toString());
+                    $countVal = intval($count->get('IntValue')->getValue());
                 }
                 elseif ($count->get('FunctionCall') !== null) {
-                    $countFunctionName = $count->get('FunctionCall')->get('FunctionName')->toString();
+                    $countFunctionName = $count->get('FunctionCall')->get('FunctionName')->getValue();
                     $countVal = $this->$countFunctionName();
                 }
             }
@@ -254,7 +254,7 @@ class GdlParser
         $elementType = $specificElement->getName();
 
         if ($elementType === 'RuleName') {
-            $rule = $this->getRule($specificElement->toString());
+            $rule = $this->getRule($specificElement->getValue());
             $parsedElement = $this->parseRule($rule);
         }
         elseif ($elementType === 'StringLiteral') {
@@ -273,6 +273,16 @@ class GdlParser
         return $parsedElement;
     }
 
+    protected function str(GdlNode &$parsedElement)
+    {
+        $parsedElement->setValue($parsedElement->toString());
+    }
+
+    protected function symbolStr(GdlNode &$parsedElement)
+    {
+        $parsedElement->setValue($this->getSymbolStr($parsedElement));
+    }
+
     protected function parseStringLiteral(GdlNode $element)
     {
         $parsedValue = null;
@@ -285,7 +295,7 @@ class GdlParser
             }
 
             $contentSymbol = $this->stream->readSymbol();
-            $str = $this->getSymbolStr($symbol);
+            $str = $symbol->getValue();
             if ($contentSymbol !== $str) {
                 $parsedValue = null;
                 break;
@@ -312,8 +322,8 @@ class GdlParser
                     $symbolList = $symbolRange->getArray('Symbol');
 
                     if (count($symbolList) === 2) {
-                        $strFrom = $this->getSymbolStr($symbolList[0]);
-                        $strTo = $this->getSymbolStr($symbolList[1]);
+                        $strFrom = $symbolList[0]->getValue();
+                        $strTo = $symbolList[1]->getValue();
 
                         // use build-in PHP string comparison
                         if ($contentSymbol >= $strFrom && $contentSymbol <= $strTo) {
@@ -322,7 +332,7 @@ class GdlParser
                         }
                     }
                     elseif (count($symbolList) === 1) {
-                        $str = $this->getSymbolStr($symbolList[0]);
+                        $str = $symbolList[0]->getValue();
 
                         if ($contentSymbol === $str) {
                             $parsedValue = $contentSymbol;

@@ -176,9 +176,6 @@ Test:;
 
 SRC;
         $languageGrammar = $gdlParser->parse($mainRuleName, new Stream($grammarSource));
-        foreach ($languageGrammar->getArray('Rule') as $rule) {
-            $rule->get('RuleName')->setValue($rule->get('RuleName')->toString());
-        }
 
         $this->assertTrue($languageGrammar->toArray() === ['Grammar', [
             ['Rule', [
@@ -213,7 +210,7 @@ SRC;
 
         $grammarSource = <<<'SRC'
 Data:
-    (Word '\n')*
+    (Word={str} '\n')*
 ;
 
 Word:
@@ -232,7 +229,7 @@ SRC;
         $this->assertEmpty($gdlParser->getErrors());
 
 
-        $mainRuleName = $languageGrammar->get('Rule')->get('RuleName')->toString();
+        $mainRuleName = $languageGrammar->get('Rule')->get('RuleName')->getValue();
         $languageParser = new GdlParser($languageGrammar);
 
         $source = <<<'SRC'
@@ -242,9 +239,6 @@ SRC;
 
 SRC;
         $tree = $languageParser->parse($mainRuleName, new Stream($source));
-        foreach ($tree->getArray('Word') as $word) {
-            $word->setValue($word->toString());
-        }
 
         $this->assertEmpty($languageParser->getErrors());
         $this->assertTrue($tree->toArray() === ['Data', [
@@ -264,9 +258,6 @@ test
 
 SRC;
         $tree = $languageParser->parse($mainRuleName, new Stream($source));
-        foreach ($tree->getArray('Word') as $word) {
-            $word->setValue($word->toString());
-        }
 
         $this->assertTrue($languageParser->getErrors() === [
             'Unexpected data at 2:1 (9)',
@@ -284,7 +275,7 @@ SRC;
 
         $grammarSource = <<<'SRC'
 Data:
-    Count={setCount} '\n' Element{={getCount}}
+    Count={str,setCount} '\n' Element={str}{={getCount}}
 ;
 
 Count:
@@ -300,14 +291,14 @@ SRC;
         $this->assertEmpty($gdlParser->getErrors());
 
 
-        $mainRuleName = $languageGrammar->get('Rule')->get('RuleName')->toString();
+        $mainRuleName = $languageGrammar->get('Rule')->get('RuleName')->getValue();
 
         $languageParser = new class($languageGrammar) extends GdlParser {
             protected $cnt;
 
             public function setCount(GdlNode &$parsedElement)
             {
-                $this->cnt = intval($parsedElement->toString());
+                $this->cnt = intval($parsedElement->getValue());
             }
 
             public function getCount(): int
@@ -328,11 +319,6 @@ Element6
 
 SRC;
         $tree = $languageParser->parse($mainRuleName, new Stream($source));
-        $tree->get('Count')->setValue($tree->get('Count')->toString());
-        $tree->get('')->setValue($tree->get('')->toString());
-        foreach ($tree->getArray('Element') as $element) {
-            $element->setValue($element->toString());
-        }
 
         $this->assertEmpty($languageParser->getErrors());
         $this->assertTrue($tree->toArray() === ['Data', [
@@ -375,11 +361,6 @@ Element7
 
 SRC;
         $tree = $languageParser->parse($mainRuleName, new Stream($source));
-        $tree->get('Count')->setValue($tree->get('Count')->toString());
-        $tree->get('')->setValue($tree->get('')->toString());
-        foreach ($tree->getArray('Element') as $element) {
-            $element->setValue($element->toString());
-        }
 
         $this->assertTrue($tree->toArray() === ['Data', [
             ['Count', '0006'],

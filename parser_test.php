@@ -376,4 +376,88 @@ SRC;
             'Unexpected data at 8:1 (59)',
         ]);
     }
+
+    public function testComplexString()
+    {
+        $mainRuleName = 'Grammar';
+        $gdlParser = new GdlParser($this->getSelfGrammar());
+
+        $grammarSource = <<<'SRC'
+Data:
+    (ComplexString '\n')*
+;
+
+ComplexString:
+    '<<<\'' StringTag={str,setStringStart} '\'' '\n' Content={str} '\n' StringTag={str,checkStringEnd}
+;
+
+Content:
+    .*>('\n' StringTag={str,checkStringEnd})
+;
+
+StringTag:
+    [a-zA-Z]+
+;
+SRC;
+        $languageGrammar = $gdlParser->parse($mainRuleName, new Stream($grammarSource));
+
+        $this->assertEmpty($gdlParser->getErrors());
+
+
+        $mainRuleName = $languageGrammar->get('Rule')->get('RuleName')->getValue();
+
+        $languageParser = new class($languageGrammar) extends GdlParser {
+            protected $complexStringTag;
+
+            public function setStringStart(GdlNode &$parsedElement)
+            {
+                $this->complexStringTag = $parsedElement->getValue();
+            }
+
+            public function checkStringEnd(GdlNode &$parsedElement)
+            {
+                if ($parsedElement->getValue() !== $this->complexStringTag) {
+                    $parsedElement = null;
+                }
+            }
+        };
+
+
+        $source = <<<'SRC'
+<<<'test'
+<<<'abc'
+a b c
+abc
+test
+<<<'tag'
+1 2 3 4
+tag
+
+SRC;
+        $tree = $languageParser->parse($mainRuleName, new Stream($source));
+
+        $this->assertEmpty($languageParser->getErrors());
+        $this->assertTrue($tree->toArray() === ['Data', [
+            ['ComplexString', [
+                ['', '<<<\''],
+                ['StringTag', 'test'],
+                ['', '\''],
+                ['', "\n"],
+                ['Content', "<<<'abc'\na b c\nabc"],
+                ['', "\n"],
+                ['StringTag', 'test'],
+            ]],
+            ['', "\n"],
+            ['ComplexString', [
+                ['', '<<<\''],
+                ['StringTag', 'tag'],
+                ['', '\''],
+                ['', "\n"],
+                ['Content', "1 2 3 4"],
+                ['', "\n"],
+                ['StringTag', 'tag'],
+            ]],
+            ['', "\n"],
+        ]]);
+    }
 }

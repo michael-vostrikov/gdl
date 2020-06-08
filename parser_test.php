@@ -460,4 +460,81 @@ SRC;
             ['', "\n"],
         ]]);
     }
+
+    public function testPhp()
+    {
+        $mainRuleName = 'Grammar';
+        $gdlParser = new GdlParser($this->getSelfGrammar());
+
+        $grammarSource = file_get_contents(__DIR__ . '/php.gdl');
+        $stream = new Stream($grammarSource);
+
+        $t1 = microtime(1);
+        $languageGrammar = $gdlParser->parse($mainRuleName, $stream);
+        $t2 = microtime(1);
+        echo ($t2 - $t1) . "\n";
+
+        $this->assertEmpty($gdlParser->getErrors());
+
+
+        $mainRuleName = $languageGrammar->get('Rule')->get('RuleName')->getValue();
+
+        $languageParser = new class($languageGrammar) extends GdlTextParser {
+            protected $complexStringTag;
+
+            public function setStringStart(GdlNode &$parsedElement)
+            {
+                $this->complexStringTag = $parsedElement->getValue();
+            }
+
+            public function checkStringEnd(GdlNode &$parsedElement)
+            {
+                if ($parsedElement->getValue() !== $this->complexStringTag) {
+                    $parsedElement = null;
+                }
+            }
+
+            protected function handleError(GdlNode $expression)
+            {
+                parent::handleError($expression);
+
+                while (!$this->stream->eof()) {
+                    $symbol = $this->stream->readSymbol();
+                    if ($symbol === "\n") {
+                        break;
+                    }
+                }
+
+                $i = count($this->ruleCallStack) - 1;
+                while ($this->ruleCallStack[$i][0] == '()') { $i--; }
+                $ruleName = $this->ruleCallStack[$i][0];
+
+                if ($ruleName === 'FunctionDeclaration' || $ruleName === 'StatementBlock') {
+                    $level = 1;
+                    while (!$this->stream->eof()) {
+                        $symbol = $this->stream->readSymbol();
+                        if ($symbol === '{') {
+                            $level++;
+                        }
+                        else if ($symbol === '}') {
+                            $level--;
+                            if ($level == 0) {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        $source = file_get_contents(__DIR__ . '/GdlParser.php');
+
+        $t1 = microtime(1);
+        $tree = $languageParser->parse($mainRuleName, new Stream($source));
+        $t2 = microtime(1);
+        echo ($t2 - $t1) . "\n";
+
+        $this->assertEmpty($languageParser->getErrors());
+        $this->assertTrue(!empty($tree));
+    }
 }

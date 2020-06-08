@@ -1,0 +1,402 @@
+Program:
+    .*>> '<?php' PhpProgram
+;
+
+PhpProgram:
+    TopStatement*
+;
+
+comment:
+    | '/*' AnySymbol*>> '*/'
+    | '//'={setKeepSpaces} AnySymbol*>> '\n'={clearKeepSpaces}
+;
+
+TopStatement:
+    | NamespaceStatement
+    | UseStatement
+    | ClassDeclaration
+    | FunctionDeclaration
+    | StatementList
+;
+
+NamespaceStatement:
+    'namespace'! NamespaceName ';'
+;
+
+NamespaceName:
+    NamespacePart ('\\' NamespacePart)*
+;
+
+NamespacePart:
+    ID
+;
+
+ID:
+    [a-zA-Z_] [a-zA-Z_0-9]*
+;
+
+UseStatement:
+    'use'! NamespaceName (',' NamespaceName)* ';'
+;
+
+ClassDeclaration:
+    'class'! ClassName
+        ('extends' ClassReference)?
+        ('implements' InterfaceReference)?
+        '{' ClassBody? '}'
+;
+
+ClassName:
+    ID
+;
+
+ClassReference:
+    '\\'? ClassName ('\\' ClassName)*
+;
+
+InterfaceReference:
+    '\\'? ClassName ('\\' ClassName)*
+;
+
+ClassBody:
+    ClassBodyStatement+
+;
+
+ClassBodyStatement:
+    | PropertyDeclaration
+    | MethodDeclaration
+    | comment
+;
+
+PropertyDeclaration:
+    AccessModifier PropertyName! AssignExpression? ';'
+;
+
+PropertyName:
+    VariableName
+;
+
+VariableName:
+    '$'! ID
+;
+
+AccessModifier:
+    | 'private'
+    | 'protected'
+    | 'public'
+;
+
+MethodDeclaration:
+    AccessModifier? FunctionDeclaration
+;
+
+FunctionDeclaration:
+    'function'! FunctionName '(' ArgumentList? ')'
+        '{' FunctionBody? '}'
+;
+
+FunctionName:
+    ID
+;
+
+ArgumentList:
+    Argument (',' Argument)*
+;
+
+Argument:
+    TypeReference? ReferenceModifier? VariableName AssignExpression?
+;
+
+TypeReference:
+    '?'? ClassReference
+;
+
+ReferenceModifier:
+    '&'
+;
+
+FunctionBody:
+    StatementList
+;
+
+StatementList:
+    Statement+>'}'
+;
+
+Statement:
+    | IfStatement
+    | ForeachStatement
+    | ForStatement
+    | ReturnStatement
+    | BreakStatement
+    | ContinueStatement
+    | WhileStatement
+    | DoWhileStatement
+    | SwitchStatement
+    | ThrowStatement
+    | TryStatement
+    | comment
+    | AssignStatement
+    | ExpressionStatement
+;
+
+AssignStatement:
+    (List | UnaryExpression) AssignExpression ';'
+;
+
+List:
+    'list'! '(' ExpressionList ')'
+;
+
+AssignExpression:
+    ('=' | '.=' | '+=' | '-=' | '*=' | '/=' | '%=') Expression
+;
+
+ExpressionStatement:
+    Expression ';'
+;
+
+VariableReference:
+    (ClassReference '::')? (VariableName | ConstantName)
+;
+
+ConstantName:
+    ID
+;
+
+AccessList:
+    AccessElement+
+;
+
+AccessElement:
+    | MethodCall
+    | PropertyAccess
+    | ArrayElementAccess
+;
+
+PropertyAccess:
+    '->' ID
+;
+
+MethodCall:
+    | '->' FunctionCall
+    |  ('++' | '--')
+;
+
+ExpressionList:
+    Expression (',' Expression)*
+;
+
+ArrayElementAccess:
+    '['! Expression? ']'
+;
+
+IfStatement:
+    'if' '(' Expression ')' StatementBlock
+        ('elseif' '(' Expression ')' StatementBlock)*
+        ('else' StatementBlock)?
+;
+
+StatementBlock:
+    | Statement
+    | '{'! StatementList? '}'
+;
+
+ForStatement:
+    'for'! '(' Expression? ';' Expression? ';' Expression? ')' StatementBlock
+;
+
+ForeachStatement:
+    'foreach'! '(' Expression 'as' ForeachKey? ReferenceModifier? VariableName ')' StatementBlock
+;
+
+ForeachKey:
+    VariableName '=>'
+;
+
+ReturnStatement:
+    'return' Expression ';'
+;
+
+BreakStatement:
+    'break' ';'
+;
+
+ContinueStatement:
+    'continue' ';'
+;
+
+ThrowStatement:
+    'throw' Expression ';'
+;
+
+TryStatement:
+    'try' '{' StatementList '}' CatchStatement?
+;
+
+CatchStatement:
+    'catch' '(' Argument ')' '{' StatementList '}'
+;
+
+WhileStatement:
+    'while' '(' Expression ')' StatementBlock
+;
+
+DoWhileStatement:
+    'do' StatementBlock 'while' '(' Expression ')' ';'
+;
+
+SwitchStatement:
+    'switch' '{' CaseList '}'
+;
+
+CaseList:
+    Case+
+;
+
+Case:
+    'case' Expression ':' StatementList
+;
+
+Expression:
+    TernaryExpression AssignExpression?
+;
+
+TernaryExpression:
+    LogicalOrExpression ('?' Expression ':' Expression)*
+;
+
+LogicalOrExpression:
+    LogicalAndExpression ('||' LogicalAndExpression)*
+;
+
+LogicalAndExpression:
+    CompareExpression ('&&' CompareExpression)*
+;
+
+CompareExpression:
+    NullCoalesceExpression (('===' | '!==' | '==' | '!=' | '>=' | '<=' | '>' | '<') NullCoalesceExpression)*
+;
+
+NullCoalesceExpression:
+    AddExpression ('??' AddExpression)*
+;
+
+AddExpression:
+    MulExpression (('+' | '-' | '.' | '&' | '|' | '^') MulExpression)*
+;
+
+MulExpression:
+    UnaryExpression (('*' | '/' | '%') UnaryExpression)*
+;
+
+UnaryExpression:
+    ('+' | '-' | '!' | '~')? PrimaryExpression AccessList?
+;
+
+PrimaryExpression:
+    | NewExpression
+    | FunctionCall
+    | VariableReference
+    | Literal
+    | '(' Expression ')'
+;
+
+NewExpression:
+    'new'! ClassReference ('('! ExpressionList? ')')?
+;
+
+FunctionCall:
+    (FunctionName | VariableReference) '(' ExpressionList? ')'
+;
+
+Literal:
+    | StringLiteral
+    | NumberLiteral
+    | ArrayLiteral
+    | NullLiteral
+    | LogicalLiteral
+;
+
+NullLiteral:
+    'null'
+;
+
+LogicalLiteral:
+    | 'false'
+    | 'true'
+;
+
+NumberLiteral:
+    | HexNumberLiteral
+    | DecimalNumberLiteral
+;
+
+DecimalNumberLiteral:
+    [0-9]+ ('.' [0-9]+)?
+;
+
+HexNumberLiteral:
+    '0x'! [0-9A-F]+
+;
+
+StringLiteral:
+    | SingleQuoteString
+    | DoubleQuoteString
+    | NowdocString
+    | HeredocString
+;
+
+SingleQuoteString:
+    '\''={setKeepSpaces} Symbol*>> '\''={clearKeepSpaces}
+;
+
+DoubleQuoteString:
+    '"'={setKeepSpaces} Symbol*>> '"'={clearKeepSpaces}
+;
+
+NowdocString:
+    '<<<\''={setKeepSpaces}  StringTag={str,setStringStart} '\'' '\n' Symbol*>> ('\n' StringTag={str,checkStringEnd,clearKeepSpaces})
+;
+
+HeredocString:
+    '<<<'={setKeepSpaces} StringTag={str,setStringStart} '\n' Symbol*>> ('\n' StringTag={str,checkStringEnd,clearKeepSpaces})
+;
+
+StringTag:
+    [a-zA-Z]+
+;
+
+Symbol:
+    | HexCodeSymbol
+    | EscapedSymbol
+    | AnySymbol
+;
+
+HexCodeSymbol:
+    '\\x' HexDigit HexDigit
+;
+
+HexDigit:
+    [0-9A-F]
+;
+
+EscapedSymbol:
+    '\\'! AnySymbol
+;
+
+AnySymbol:
+    .
+;
+
+ArrayLiteral:
+    '[' ArrayElementList? ']'
+;
+
+ArrayElementList:
+    ArrayElement (',' ArrayElement)* ','?
+;
+
+ArrayElement:
+    Expression ('=>' Expression)?
+;

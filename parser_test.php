@@ -537,4 +537,20 @@ SRC;
         $this->assertEmpty($languageParser->getErrors());
         $this->assertTrue(!empty($tree));
     }
+
+    public function testGenerator()
+    {
+        $mainRuleName = 'Grammar';
+        $gdlParser = new GdlParser($this->getSelfGrammar());
+
+        $grammarSource = file_get_contents(__DIR__ . '/json.gdl');
+        $stream = new Stream($grammarSource);
+
+        $languageGrammar = $gdlParser->parse($mainRuleName, $stream);
+        $this->assertEmpty($gdlParser->getErrors());
+        $this->assertTrue(!empty($languageGrammar));
+
+        $generator = new GdlGenerator($languageGrammar, "Json");
+        $generator->generateFile(__DIR__ . '/cpp/JsonParser.h');
+    }
 }

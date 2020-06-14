@@ -38,6 +38,16 @@ public:
         return std::max(0lu, std::min(pos, this->content.getSize()));
     }
 
+    char* getCurrentDataPtr()
+    {
+        return this->content.getDataPtr() + this->pos;
+    }
+
+    char getCurrentSymbol()
+    {
+        return this->content.getDataPtr()[this->pos];
+    }
+
     char readSymbol()
     {
         char symbol = '\0';

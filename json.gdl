@@ -1,0 +1,62 @@
+/* Ported from https://github.com/antlr/grammars-v4/blob/master/json/JSON.g4 */
+
+Json
+   : Value
+   ;
+
+Obj
+   : '{'! Pair (',' Pair)* '}'
+   | '{' '}'
+;
+
+Pair
+   : String ':' Value
+   ;
+
+Arr
+   : '['! (Value (',' Value)*)? ']'
+   ;
+
+Value
+   : Obj
+   | String
+   | Number
+   | Arr
+   | 'true'
+   | 'false'
+   | 'null'
+   ;
+
+String
+   : '"'={setKeepSpaces}! SafeCodePoint*>> '"'={clearKeepSpaces}
+   ;
+
+/*
+Esc
+   : '\\' (["\\/bfnrt] | Unicode)
+   ;
+Unicode
+   : 'u' Hex Hex Hex Hex
+   ;
+Hex
+   : [0-9a-fA-F]
+   ;
+*/
+
+SafeCodePoint
+   : [\x20-\xFF]
+   ;
+
+
+Number
+   : '-'? Int ('.' [0-9]+)? Exp?
+   ;
+
+
+Int
+   : '0' | [1-9] [0-9]*
+   ;
+
+Exp
+   : [Ee] [+\-]? Int
+   ;

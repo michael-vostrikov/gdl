@@ -4,7 +4,7 @@ class GdlNode
 {
 protected:
 
-    StringDescriptor name;
+    uint32_t name;
 
     enum {VALUE_LIST, VALUE_STRING} valueType;
 
@@ -13,12 +13,17 @@ protected:
 
 public:
 
-    GdlNode(StringDescriptor name, StringDescriptor value): name(name), stringValue(value), listValue()
+    GdlNode(uint32_t name): name(name), stringValue(""), listValue()
+    {
+        this->valueType = GdlNode::VALUE_LIST;
+    }
+
+    GdlNode(uint32_t name, StringDescriptor value): name(name), stringValue(value), listValue()
     {
         this->valueType = GdlNode::VALUE_STRING;
     }
 
-    GdlNode(StringDescriptor name, std::vector<GdlNode*> value): name(name), stringValue(""), listValue(value)
+    GdlNode(uint32_t name, std::vector<GdlNode*> value): name(name), stringValue(""), listValue(value)
     {
         this->valueType = GdlNode::VALUE_LIST;
     }
@@ -28,9 +33,14 @@ public:
         this->valueType = node.valueType;
     }
 
-    StringDescriptor& getName()
+    uint32_t& getName()
     {
         return this->name;
+    }
+
+    void setName(uint32_t name)
+    {
+        this->name = name;
     }
 
     int getValueType()
@@ -46,6 +56,11 @@ public:
     std::vector<GdlNode*>& getListValue()
     {
         return this->listValue;
+    }
+
+    void addToList(GdlNode* element)
+    {
+        this->listValue.push_back(element);
     }
 
     void setStringValue(StringDescriptor value)
@@ -68,7 +83,7 @@ public:
         return *it;
     }
 
-    GdlNode* get(StringDescriptor name)
+    GdlNode* get(uint32_t name)
     {
         for (auto it = this->listValue.begin(); it != this->listValue.end(); ++it) {
             GdlNode* pNode = *it;
@@ -80,7 +95,7 @@ public:
         return NULL;
     }
 
-    std::vector<GdlNode*> getArray(StringDescriptor name)
+    std::vector<GdlNode*> getArray(uint32_t name)
     {
         std::vector<GdlNode*> arr;
         for (auto it = this->listValue.begin(); it != this->listValue.end(); ++it) {
@@ -141,7 +156,7 @@ void printGdlNode(GdlNode* rule, int level = 1)
     }
 
     std::cout << indent << "GdlNode: {"<< std::endl;
-    std::cout << indent << "    " << "name: " << rule->getName().getStdString() << std::endl;
+    std::cout << indent << "    " << "name: " << std::to_string(rule->getName()) << std::endl;
     std::cout << indent << "    " << "stringValue: '" << rule->getStringValue().getStdString() << "'" << std::endl;
     std::cout << indent << "    " << "valueType: " << std::to_string((int)rule->getValueType()) << std::endl;
     std::cout << indent << "    " << "listValue: " << std::to_string(rule->getListValue().size()) << ": [" << std::endl;

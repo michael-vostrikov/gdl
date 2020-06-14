@@ -26,6 +26,11 @@ public:
         return this->size;
     }
 
+    void expand(size_t diff)
+    {
+        this->size += diff;
+    }
+
     std::string getStdString() const
     {
         return std::string(this->data, this->size);

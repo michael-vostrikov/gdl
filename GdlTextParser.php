@@ -4,47 +4,47 @@ namespace Gdl;
 
 class GdlTextParser extends GdlParser
 {
-    protected $keepSpaces = false;
-    protected $keepSpacesLevel = 0;
-
-    protected function setKeepSpaces(GdlNode &$element)
-    {
-        $this->keepSpaces = true;
-        $this->keepSpacesLevel = count($this->ruleCallStack);
-    }
-
-    protected function clearKeepSpaces(GdlNode &$element)
-    {
-        $this->keepSpaces = false;
-        $this->keepSpacesLevel = 0;
-    }
+    protected $needKeepSpaces = false;
 
     public function parse(string $mainRuleName, Stream $stream, $checkEof = true)
     {
         $this->stream = $stream;
-        $this->skipSpaces();
+
+        $rule = $this->ruleMap[$mainRuleName];
+        $ruleFlags = $rule->get('Flags');
+        $needKeepSpaces = ($ruleFlags !== null && ($ruleFlags->get('KeepSpaces') !== null || $ruleFlags->get('Lexeme') !== null));
+
+        if (!$needKeepSpaces) {
+            $this->skipSpaces();
+        }
 
         return parent::parse($mainRuleName, $stream, $checkEof);
     }
 
-    protected function parseStatement(GdlNode $statement)
+    protected function parseRule(GdlNode $rule)
     {
-        $parsedStatement = parent::parseStatement($statement);
-
-        // auto-clear flag on statement fail
-        if ($this->keepSpaces && $parsedStatement === null && count($this->ruleCallStack) <= $this->keepSpacesLevel) {
-            $this->keepSpaces = false;
-            $this->keepSpacesLevel = 0;
+        $isInline = ($rule->get('RuleName') === null);
+        if ($isInline) {
+            // keep existing value for needKeepSpaces
+            return parent::parseRule($rule);
         }
 
-        return $parsedStatement;
+        $ruleFlags = $rule->get('Flags');
+        $prevNeedKeepSpaces = $this->needKeepSpaces;
+        $this->needKeepSpaces = ($ruleFlags !== null && $ruleFlags->get('KeepSpaces') !== null);
+
+        $res = parent::parseRule($rule);
+
+        $this->needKeepSpaces = $prevNeedKeepSpaces;
+
+        return $res;
     }
 
     protected function parseExpression(GdlNode $element, ?GdlNode $lookAheadElement = null)
     {
         $res = parent::parseExpression($element, $lookAheadElement);
 
-        if ($res !== null && !$this->keepSpaces) {
+        if ($res !== null && !$this->needKeepSpaces) {
             $this->skipSpaces();
         }
 

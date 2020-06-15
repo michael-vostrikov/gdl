@@ -99,11 +99,11 @@ InlineRule:
     '('! RuleBody ')'
 ;
 
-StringLiteral:
+StringLiteral(S):
     '\''! Symbol={symbolStr}+>> '\''
 ;
 
-RegexpLiteral:
+RegexpLiteral(S):
     | '['! SymbolRange+>> ']'
     | AnySymbolLiteral
 ;

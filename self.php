@@ -705,6 +705,9 @@ $selfGrammar = ['Grammar', [
     ]],
     ['Rule', [
         ['RuleName', 'StringLiteral'],
+        ['Flags', [
+            ['KeepSpaces', 'S'],
+        ]],
         ['RuleBody', [
             ['Statement', [
                 ['Expression', [
@@ -735,6 +738,9 @@ $selfGrammar = ['Grammar', [
     ]],
     ['Rule', [
         ['RuleName', 'RegexpLiteral'],
+        ['Flags', [
+            ['KeepSpaces', 'S'],
+        ]],
         ['RuleBody', [
             ['Statement', [
                 ['Expression', [

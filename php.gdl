@@ -6,9 +6,9 @@ PhpProgram:
     TopStatement*
 ;
 
-comment:
+comment(S):
     | '/*' AnySymbol*>> '*/'
-    | '//'={setKeepSpaces} AnySymbol*>> '\n'={clearKeepSpaces}
+    | '//' AnySymbol*>> '\n'
 ;
 
 TopStatement:
@@ -347,27 +347,27 @@ StringLiteral:
     | HeredocString
 ;
 
-SingleQuoteString:
-    '\''={setKeepSpaces} Symbol*>> '\''={clearKeepSpaces}
+SingleQuoteString(S):
+    '\'' Symbol*>> '\''
 ;
 
-DoubleQuoteString:
-    '"'={setKeepSpaces} Symbol*>> '"'={clearKeepSpaces}
+DoubleQuoteString(S):
+    '"' Symbol*>> '"'
 ;
 
-NowdocString:
-    '<<<\''={setKeepSpaces}  StringTag={str,setStringStart} '\'' '\n' Symbol*>> ('\n' StringTag={str,checkStringEnd,clearKeepSpaces})
+NowdocString(S):
+    '<<<\'' StringTag={str,setStringStart} '\'' '\n' Symbol*>> ('\n' StringTag={str,checkStringEnd})
 ;
 
-HeredocString:
-    '<<<'={setKeepSpaces} StringTag={str,setStringStart} '\n' Symbol*>> ('\n' StringTag={str,checkStringEnd,clearKeepSpaces})
+HeredocString(S):
+    '<<<' StringTag={str,setStringStart} '\n' Symbol*>> ('\n' StringTag={str,checkStringEnd})
 ;
 
 StringTag:
     [a-zA-Z]+
 ;
 
-Symbol:
+Symbol(S):
     | HexCodeSymbol
     | EscapedSymbol
     | AnySymbol

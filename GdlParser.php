@@ -18,6 +18,8 @@ class GdlParser
     protected $errors = [];
     protected $ruleCallStack = [];
 
+    protected $lexemeLevel = 0;
+
     public function __construct(GdlNode $grammar)
     {
         $this->initRules($grammar);
@@ -71,6 +73,10 @@ class GdlParser
         $ruleNameStr = ($ruleName !== null ? $ruleName->getValue() : '()');
         $this->ruleCallStack[] = [$ruleNameStr, $this->stream->getPos()];
 
+        $ruleFlags = $rule->get('Flags');
+        $isLexeme = ($ruleFlags !== null && $ruleFlags->get('Lexeme') !== null);
+        if ($isLexeme) $this->lexemeLevel++;
+
         $parsedRule = null;
 
         $statementList = $rule->get('RuleBody')->getArray('Statement');
@@ -87,7 +93,9 @@ class GdlParser
 
         array_pop($this->ruleCallStack);
 
-        return ($parsedRule === null ? null : new GdlNode($ruleNameStr, $parsedRule));
+        if ($isLexeme) $this->lexemeLevel--;
+
+        return ($parsedRule === null ? null : ($this->lexemeLevel > 0 ? $parsedRule : new GdlNode($ruleNameStr, $parsedRule)));
     }
 
     protected function parseStatement(GdlNode $statement)
@@ -125,27 +133,33 @@ class GdlParser
             }
 
             if (!empty($parsedExpression)) {
-                // skip elements with name started with small letter
-                $name = $parsedExpression[0]->getName();  // all parsed elements in expression have same name
-                $isSmallLetter = (!empty($name) && ($name[0] >= 'a' && $name[0] <= 'z'));
+                $specificElement = $expression->get('Element')->getFirst();
+                $elementType = $specificElement->getName();
 
-                if (!$isSmallLetter) {
-                    if ($name === '()') {
-                        foreach ($parsedExpression as $inlineRule) {
-                            $this->addToParsedStatement($parsedStatement, $inlineRule->getValue());
-                        }
+                if ($elementType === "InlineRule") {
+                    foreach ($parsedExpression as $inlineRule) {
+                        $this->addToParsedStatement($parsedStatement, ($this->lexemeLevel > 0 ? [$inlineRule] : $inlineRule->getValue()));
                     }
-                    else {
+                }
+                else {
+                    $needSkip = false;
+                    if ($elementType === "RuleName") {
+                        $name = $specificElement->getValue();
+                        $ruleFlags = $this->ruleMap[$name]->get('Flags');
+                        $needSkip = ($ruleFlags !== null && $ruleFlags->get('Skip') !== null);
+                    }
+
+                    if (!$needSkip) {
                         $this->addToParsedStatement($parsedStatement, $parsedExpression);
                     }
                 }
             }
         }
 
-        return $parsedStatement;
+        return ($this->lexemeLevel > 0 && $parsedStatement !== null ? implode('', $parsedStatement) : $parsedStatement);
     }
 
-    protected function addToParsedStatement(array &$parsedStatement, array $parsedExpression)
+    protected function addToParsedStatement(array &$parsedStatement, $parsedExpression)
     {
         foreach ($parsedExpression as $parsedElement) {
             $parsedStatement[] = $parsedElement;
@@ -270,6 +284,10 @@ class GdlParser
             throw new Exception('Unknown element type: ' . $elementType);
         }
 
+        if (is_string($parsedElement) && $this->lexemeLevel == 0) {
+            return new GdlNode('', $parsedElement);
+        }
+
         return $parsedElement;
     }
 
@@ -304,7 +322,7 @@ class GdlParser
             $parsedValue .= $contentSymbol;
         }
 
-        return ($parsedValue === null ? null : new GdlNode('', $parsedValue));
+        return ($parsedValue === null ? null : $parsedValue);
     }
 
     protected function parseRegexpLiteral(GdlNode $element)
@@ -343,7 +361,7 @@ class GdlParser
             }
         }
 
-        return ($parsedValue === null ? null : new GdlNode('', $parsedValue));
+        return ($parsedValue === null ? null : $parsedValue);
     }
 
     protected $escapedSymbols = ['s' => ' ', 't' => "\t", 'r' => "\r", 'n' => "\n"];
@@ -355,10 +373,10 @@ class GdlParser
         $elementType = $specificElement->getName();
 
         if ($elementType === 'AnySymbol') {
-            $str = $specificElement->get('')->getValue();
+            $str = $specificElement->getValue();
         }
         elseif ($elementType === 'EscapedSymbol') {
-            $str = $specificElement->get('AnySymbol')->get('')->getValue();
+            $str = $specificElement->get('AnySymbol')->getValue();
             $str = (isset($this->escapedSymbols[$str]) ? $this->escapedSymbols[$str] : $str);
         }
         elseif ($elementType === 'HexCodeSymbol') {

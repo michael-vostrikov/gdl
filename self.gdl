@@ -2,21 +2,21 @@ Grammar:
     delimiter* Rule*
 ;
 
-delimiter:
+delimiter(-L):
     | space
     | comment
 ;
 
-space:
+space(-L):
     [\s\n\t\r]+
 ;
 
-comment:
+comment(-L):
     '/*' AnySymbol*>> '*/'
 ;
 
 Rule:
-    RuleName={str}! delimiter* ':' delimiter* RuleBody ';' delimiter*
+    RuleName={str}! Flags? delimiter* ':' delimiter* RuleBody ';' delimiter*
 ;
 
 RuleName:
@@ -25,6 +25,22 @@ RuleName:
 
 ID:
     [a-zA-Z_] [a-zA-Z_0-9]*
+;
+
+Flags:
+    '(' Skip? (Lexeme | KeepSpaces)? ')'
+;
+
+Skip(L):
+    '-'
+;
+
+Lexeme(L):
+    'L'
+;
+
+KeepSpaces(L):
+    'S'
 ;
 
 RuleBody:
@@ -114,7 +130,7 @@ EscapedSymbol:
     '\\'! AnySymbol
 ;
 
-AnySymbol:
+AnySymbol(L):
     .
 ;
 

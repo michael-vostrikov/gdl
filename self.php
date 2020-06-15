@@ -22,6 +22,10 @@ $selfGrammar = ['Grammar', [
     ]],
     ['Rule', [
         ['RuleName', 'delimiter'],
+        ['Flags', [
+            ['Skip', '-'],
+            ['Lexeme', 'L'],
+        ]],
         ['RuleBody', [
             ['Statement', [
                 ['Expression', [
@@ -41,6 +45,10 @@ $selfGrammar = ['Grammar', [
     ]],
     ['Rule', [
         ['RuleName', 'space'],
+        ['Flags', [
+            ['Skip', '-'],
+            ['Lexeme', 'L'],
+        ]],
         ['RuleBody', [
             ['Statement', [
                 ['Expression', [
@@ -67,6 +75,10 @@ $selfGrammar = ['Grammar', [
     ]],
     ['Rule', [
         ['RuleName', 'comment'],
+        ['Flags', [
+            ['Skip', '-'],
+            ['Lexeme', 'L'],
+        ]],
         ['RuleBody', [
             ['Statement', [
                 ['Expression', [
@@ -105,6 +117,12 @@ $selfGrammar = ['Grammar', [
                     ]],
                     ['FunctionCall', [['FunctionName', 'str']]],
                     ['Cut', '!'],
+                ]],
+                ['Expression', [
+                    ['Element', [
+                        ['RuleName', 'Flags'],
+                    ]],
+                    ['Quantifier', [['', '?']]],
                 ]],
                 ['Expression', [
                     ['Element', [
@@ -200,6 +218,107 @@ $selfGrammar = ['Grammar', [
                         ]],
                     ]],
                     ['Quantifier', [['', '*']]],
+                ]],
+            ]],
+        ]],
+    ]],
+    ['Rule', [
+        ['RuleName', 'Flags'],
+        ['RuleBody', [
+            ['Statement', [
+                ['Expression', [
+                    ['Element', [
+                        ['StringLiteral', [
+                            ['Symbol', '('],
+                        ]],
+                    ]],
+                ]],
+                ['Expression', [
+                    ['Element', [
+                        ['RuleName', 'Skip'],
+                    ]],
+                    ['Quantifier', [['', '?']]],
+                ]],
+                ['Expression', [
+                    ['Element', [
+                        ['InlineRule', [
+                            ['RuleBody', [
+                                ['Statement', [
+                                    ['Expression', [
+                                        ['Element', [
+                                            ['RuleName', 'Lexeme'],
+                                        ]],
+                                    ]],
+                                ]],
+                                ['Statement', [
+                                    ['Expression', [
+                                        ['Element', [
+                                            ['RuleName', 'KeepSpaces'],
+                                        ]],
+                                    ]],
+                                ]],
+                            ]],
+                        ]],
+                    ]],
+                    ['Quantifier', [['', '?']]],
+                ]],
+                ['Expression', [
+                    ['Element', [
+                        ['StringLiteral', [
+                            ['Symbol', ')'],
+                        ]],
+                    ]],
+                ]],
+            ]],
+        ]],
+    ]],
+    ['Rule', [
+        ['RuleName', 'Lexeme'],
+        ['Flags', [
+            ['Lexeme', 'L'],
+        ]],
+        ['RuleBody', [
+            ['Statement', [
+                ['Expression', [
+                    ['Element', [
+                        ['StringLiteral', [
+                            ['Symbol', 'L'],
+                        ]],
+                    ]],
+                ]],
+            ]],
+        ]],
+    ]],
+    ['Rule', [
+        ['RuleName', 'KeepSpaces'],
+        ['Flags', [
+            ['Lexeme', 'L'],
+        ]],
+        ['RuleBody', [
+            ['Statement', [
+                ['Expression', [
+                    ['Element', [
+                        ['StringLiteral', [
+                            ['Symbol', 'S'],
+                        ]],
+                    ]],
+                ]],
+            ]],
+        ]],
+    ]],
+    ['Rule', [
+        ['RuleName', 'Skip'],
+        ['Flags', [
+            ['Lexeme', 'L'],
+        ]],
+        ['RuleBody', [
+            ['Statement', [
+                ['Expression', [
+                    ['Element', [
+                        ['StringLiteral', [
+                            ['Symbol', '-'],
+                        ]],
+                    ]],
                 ]],
             ]],
         ]],
@@ -789,6 +908,9 @@ $selfGrammar = ['Grammar', [
     ]],
     ['Rule', [
         ['RuleName', 'AnySymbol'],
+        ['Flags', [
+            ['Lexeme', 'L'],
+        ]],
         ['RuleBody', [
             ['Statement', [
                 ['Expression', [

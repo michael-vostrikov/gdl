@@ -203,8 +203,6 @@ public:
                 break;
             }
             if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
 
             this->skipSpaces();
 
@@ -247,8 +245,6 @@ public:
                 break;
             }
             if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
 
             this->skipSpaces();
 
@@ -308,8 +304,6 @@ public:
                 break;
             }
             if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
 
             this->skipSpaces();
 
@@ -367,8 +361,6 @@ public:
                 break;
             }
             if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
 
             this->skipSpaces();
 
@@ -381,8 +373,6 @@ public:
                 break;
             }
             if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
 
             this->skipSpaces();
 
@@ -457,8 +447,6 @@ public:
                 break;
             }
             if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
 
             this->skipSpaces();
 
@@ -531,8 +519,6 @@ public:
                 break;
             }
             if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
 
             this->skipSpaces();
 
@@ -559,8 +545,6 @@ public:
                 break;
             }
             if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
 
             this->skipSpaces();
 
@@ -712,8 +696,6 @@ public:
                 break;
             }
             if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
 
             this->skipSpaces();
 
@@ -999,8 +981,6 @@ public:
                 break;
             }
             if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
 
             // ------------------------------------------------
             
@@ -1045,8 +1025,6 @@ public:
                 break;
             }
             if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
 
             // ------------------------------------------------
             
@@ -1091,8 +1069,6 @@ public:
                 break;
             }
             if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
 
             // ------------------------------------------------
             

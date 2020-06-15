@@ -749,8 +749,6 @@ SRC;
             $addElementStr = "";
         }
         elseif ($elementType === 'StringLiteral') {
-            // TODO: keep terminals flag
-
             list($str, $len) = $this->generateStringValue($specificElement);
 
             $elementCode = "
@@ -761,10 +759,14 @@ SRC;
             $breakCondition = "parsedSize == 0";
 
             if (!$currentIsLexeme) {
+                // skip unnamed literals in rules, they are just for markup
+
+                /*
                 $addElementStr = '
             parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
             ';
+                */
             }
             else {
                 $addElementStr = '
@@ -773,8 +775,6 @@ SRC;
             }
         }
         elseif ($elementType === 'RegexpLiteral') {
-            // TODO: keep terminals flag
-
             list($str, $len) = $this->generateRegexpValue($specificElement);
 
             $elementCode = "
@@ -785,10 +785,14 @@ SRC;
             $breakCondition = "parsedSize == 0";
 
             if (!$currentIsLexeme) {
+                // skip unnamed literals in rules, they are just for markup
+
+                /*
                 $addElementStr = '
             parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
             ';
+                */
             }
             else {
                 $addElementStr = '
@@ -803,7 +807,7 @@ SRC;
 
         if ($isInlineRule) $inlineRuleIndex++;
 
-        return [$elementCode, $breakCondition, $addElementStr, $createResultStr];
+        return [$elementCode, $breakCondition, $addElementStr, $createResultStr ];
     }
 
     public function generateSymbolStr(string $char, $quotesMode)

@@ -147,22 +147,3 @@ public:
         return StringDescriptor(data, size);
     }
 };
-
-void printGdlNode(GdlNode* rule, int level = 1)
-{
-    std::string indent = "";
-    for (int i = 1; i < level; i++) {
-        indent += "    ";
-    }
-
-    std::cout << indent << "GdlNode: {"<< std::endl;
-    std::cout << indent << "    " << "name: " << std::to_string(rule->getName()) << std::endl;
-    std::cout << indent << "    " << "stringValue: '" << rule->getStringValue().getStdString() << "'" << std::endl;
-    std::cout << indent << "    " << "valueType: " << std::to_string((int)rule->getValueType()) << std::endl;
-    std::cout << indent << "    " << "listValue: " << std::to_string(rule->getListValue().size()) << ": [" << std::endl;
-    for (auto it = rule->getListValue().begin(); it != rule->getListValue().end(); ++it) {
-        printGdlNode(*it, level + 2);
-    }
-    std::cout << indent << "    " << "]" << std::endl;
-    std::cout << indent << "}" << std::endl;
-}

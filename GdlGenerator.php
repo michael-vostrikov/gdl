@@ -253,6 +253,7 @@ SRC;
         
         std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
+        size_t outerParsedSize = 0;
         
         bool isInlineParsed = false;
 
@@ -340,6 +341,7 @@ SRC;
         
         std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
+        size_t outerParsedSize = 0;
         
         bool isInlineParsed = false;
 
@@ -579,6 +581,7 @@ SRC;
 
         $quantifier = $expression->get('Quantifier');
         $quantifierType = '';
+        $countVal = 0;
         if ($quantifier !== null) {
             $count = $quantifier->get('Count');
             if ($count === null) {
@@ -586,8 +589,12 @@ SRC;
             }
             else {
                 $quantifierType = '{}';
-                // TODO: countVal
-                throw new Exception('Not implemented');
+                if ($count->get('FunctionName') === null) {
+                    $countVal = (int)$count->get('IntValue')->getValue();
+                }
+                else {
+                    throw new Exception('Not implemented');
+                }
             }
         }
 
@@ -651,12 +658,15 @@ SRC;
             }
             ";
         }
-        else if ($quantifierType === '+') {
+        else if ($quantifierType === '+' || $quantifierType === '{}') {
             $elementCode = str_replace("\n", "\n    ", $elementCode);
+            list(,,, $currentIsLexeme) = $this->generarateRuleParams($this->currentRuleName);
 
-            // TODO: check erase
+            $outerBreakCondition = ($quantifierType === '+' ? 'parsedCount < 1' : 'parsedCount != ' . $countVal);
+
             $content = "
             parsedCount = 0;
+            " . (!$currentIsLexeme ? "outerLast = res->getListValue().end();" : "outerParsedSize = res;") . "
             while (true) {
                 {$elementCode}
                 if ({$breakCondition}) {
@@ -665,16 +675,15 @@ SRC;
 
                 {$createResultStr}
                 {$addElementStr}
+                
+                parsedCount++;
             }
-            if (parsedCount == 0) {
+            if ({$outerBreakCondition}) {
+                " . (!$currentIsLexeme ? "res->getListValue().erase(outerLast, res->getListValue().end());" : "res = outerParsedSize;") . "
                 // TODO: cut
                 break;
             }
             ";
-        }
-        else if ($quantifierType === '{}') {
-            // outerLast
-            throw new Exception('Not implemented');
         }
 
         return $content;

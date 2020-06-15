@@ -1,3 +1,3 @@
 #!/bin/bash
 
-rm parser; g++ -O3 -g main.cpp -o parser 2>&1 | more && ./parser
+rm parser2; g++ -O3 -g main2.cpp -o parser2 2>&1 | more && ./parser2

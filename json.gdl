@@ -28,20 +28,20 @@ Value(S)
    ;
 
 String(L)
-   : '"'! SafeCodePoint*>> '"'
+   : '"'! (Esc | SafeCodePoint)*>> '"'
    ;
 
-/*
-Esc
+Esc(L)
    : '\\' (["\\/bfnrt] | Unicode)
    ;
-Unicode
+
+Unicode(L)
    : 'u' Hex Hex Hex Hex
    ;
-Hex
+
+Hex(L)
    : [0-9a-fA-F]
    ;
-*/
 
 SafeCodePoint(L)
    : [\x20-\xFF]

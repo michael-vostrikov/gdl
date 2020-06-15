@@ -81,7 +81,7 @@ public:
     
     
             enum TokenName {
-                Empty, Json,Obj,Pair,Arr,Value,String,SafeCodePoint,Number,Int,Exp
+                Empty, Json,Obj,Pair,Arr,Value,String,Esc,Unicode,Hex,SafeCodePoint,Number,Int,Exp
             };
         
 
@@ -1141,20 +1141,715 @@ public:
                     break;
                 }
     
-                streamData = this->stream->getCurrentDataPtr(); 
-                parsedSize = this->parseSafeCodePoint();
-                if (parsedSize == 0) {
+                parsedSize = res;
+                isInlineParsed = this->parseInline1_String_1(res);
+                if (isInlineParsed == false) {
+                    res = parsedSize;
+                }
+                if (isInlineParsed == false) {
                     break;
                 }
 
                 
-                res += parsedSize;
+                
             }
 
             // ------------------------------------------------
 
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseString("\"", 1);
+            if (parsedSize == 0) {
+                // TODO: cut
+                break;
+            }
+            
+            res += parsedSize;
+
+            // ------------------------------------------------
+            
+            isParsed = true;
+            
+        } while (false);
+
+        if (!isParsed) {
+            this->stream->setPos(initialPos);
+            return 0;
+        }
+
+        return res;
+    }
+
+    bool parseInline1_String_1(size_t& res)
+    {
+        bool isParsed = false;
+
+        char chr = this->stream->getCurrentSymbol();
+        switch (chr) {
+            case '\\':
+                isParsed = this->statement1Inline1_String_1(res);
+                if (isParsed == false) isParsed = this->statement2Inline1_String_1(res);
+            break;
+
+            case '\x20':
+            case '!':
+            case '"':
+            case '#':
+            case '$':
+            case '%':
+            case '&':
+            case '\'':
+            case '(':
+            case ')':
+            case '*':
+            case '+':
+            case ',':
+            case '-':
+            case '.':
+            case '/':
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case ':':
+            case ';':
+            case '<':
+            case '=':
+            case '>':
+            case '?':
+            case '@':
+            case 'A':
+            case 'B':
+            case 'C':
+            case 'D':
+            case 'E':
+            case 'F':
+            case 'G':
+            case 'H':
+            case 'I':
+            case 'J':
+            case 'K':
+            case 'L':
+            case 'M':
+            case 'N':
+            case 'O':
+            case 'P':
+            case 'Q':
+            case 'R':
+            case 'S':
+            case 'T':
+            case 'U':
+            case 'V':
+            case 'W':
+            case 'X':
+            case 'Y':
+            case 'Z':
+            case '[':
+            case ']':
+            case '^':
+            case '_':
+            case '`':
+            case 'a':
+            case 'b':
+            case 'c':
+            case 'd':
+            case 'e':
+            case 'f':
+            case 'g':
+            case 'h':
+            case 'i':
+            case 'j':
+            case 'k':
+            case 'l':
+            case 'm':
+            case 'n':
+            case 'o':
+            case 'p':
+            case 'q':
+            case 'r':
+            case 's':
+            case 't':
+            case 'u':
+            case 'v':
+            case 'w':
+            case 'x':
+            case 'y':
+            case 'z':
+            case '{':
+            case '|':
+            case '}':
+            case '~':
+            case '':
+            case '\x80':
+            case '\x81':
+            case '\x82':
+            case '\x83':
+            case '\x84':
+            case '\x85':
+            case '\x86':
+            case '\x87':
+            case '\x88':
+            case '\x89':
+            case '\x8A':
+            case '\x8B':
+            case '\x8C':
+            case '\x8D':
+            case '\x8E':
+            case '\x8F':
+            case '\x90':
+            case '\x91':
+            case '\x92':
+            case '\x93':
+            case '\x94':
+            case '\x95':
+            case '\x96':
+            case '\x97':
+            case '\x98':
+            case '\x99':
+            case '\x9A':
+            case '\x9B':
+            case '\x9C':
+            case '\x9D':
+            case '\x9E':
+            case '\x9F':
+            case '\xA0':
+            case '\xA1':
+            case '\xA2':
+            case '\xA3':
+            case '\xA4':
+            case '\xA5':
+            case '\xA6':
+            case '\xA7':
+            case '\xA8':
+            case '\xA9':
+            case '\xAA':
+            case '\xAB':
+            case '\xAC':
+            case '\xAD':
+            case '\xAE':
+            case '\xAF':
+            case '\xB0':
+            case '\xB1':
+            case '\xB2':
+            case '\xB3':
+            case '\xB4':
+            case '\xB5':
+            case '\xB6':
+            case '\xB7':
+            case '\xB8':
+            case '\xB9':
+            case '\xBA':
+            case '\xBB':
+            case '\xBC':
+            case '\xBD':
+            case '\xBE':
+            case '\xBF':
+            case '\xC0':
+            case '\xC1':
+            case '\xC2':
+            case '\xC3':
+            case '\xC4':
+            case '\xC5':
+            case '\xC6':
+            case '\xC7':
+            case '\xC8':
+            case '\xC9':
+            case '\xCA':
+            case '\xCB':
+            case '\xCC':
+            case '\xCD':
+            case '\xCE':
+            case '\xCF':
+            case '\xD0':
+            case '\xD1':
+            case '\xD2':
+            case '\xD3':
+            case '\xD4':
+            case '\xD5':
+            case '\xD6':
+            case '\xD7':
+            case '\xD8':
+            case '\xD9':
+            case '\xDA':
+            case '\xDB':
+            case '\xDC':
+            case '\xDD':
+            case '\xDE':
+            case '\xDF':
+            case '\xE0':
+            case '\xE1':
+            case '\xE2':
+            case '\xE3':
+            case '\xE4':
+            case '\xE5':
+            case '\xE6':
+            case '\xE7':
+            case '\xE8':
+            case '\xE9':
+            case '\xEA':
+            case '\xEB':
+            case '\xEC':
+            case '\xED':
+            case '\xEE':
+            case '\xEF':
+            case '\xF0':
+            case '\xF1':
+            case '\xF2':
+            case '\xF3':
+            case '\xF4':
+            case '\xF5':
+            case '\xF6':
+            case '\xF7':
+            case '\xF8':
+            case '\xF9':
+            case '\xFA':
+            case '\xFB':
+            case '\xFC':
+            case '\xFD':
+            case '\xFE':
+            case '\xFF':
+                isParsed = this->statement2Inline1_String_1(res);
+            break;
+        };
+
+        return isParsed;
+    }
+
+    bool statement1Inline1_String_1(size_t& res)
+    {
+        size_t initialPos = this->stream->getPos();
+    
+        auto ruleName = TokenName::String;
+        
+        size_t parsedElement = 0;
+        char* streamData = NULL;
+        size_t parsedSize = 0;
+        bool cut = false;  // TODO
+
+        size_t initialElementPos = 0;
+        size_t parsedCount = 0;
+        
+        std::vector<GdlNode*>::iterator last;
+        std::vector<GdlNode*>::iterator outerLast;
+        
+        bool isInlineParsed = false;
+
+        bool isParsed = false;
+        do {
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->parseEsc();
+            if (parsedSize == 0) {
+                // TODO: cut
+                break;
+            }
+            
+            res += parsedSize;
+
+            // ------------------------------------------------
+
+            isParsed = true;
+            
+        } while (false);
+        
+        if (!isParsed) {
+            this->stream->setPos(initialPos);
+        }
+
+        return isParsed;
+    }
+
+    bool statement2Inline1_String_1(size_t& res)
+    {
+        size_t initialPos = this->stream->getPos();
+    
+        auto ruleName = TokenName::String;
+        
+        size_t parsedElement = 0;
+        char* streamData = NULL;
+        size_t parsedSize = 0;
+        bool cut = false;  // TODO
+
+        size_t initialElementPos = 0;
+        size_t parsedCount = 0;
+        
+        std::vector<GdlNode*>::iterator last;
+        std::vector<GdlNode*>::iterator outerLast;
+        
+        bool isInlineParsed = false;
+
+        bool isParsed = false;
+        do {
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->parseSafeCodePoint();
+            if (parsedSize == 0) {
+                // TODO: cut
+                break;
+            }
+            
+            res += parsedSize;
+
+            // ------------------------------------------------
+
+            isParsed = true;
+            
+        } while (false);
+        
+        if (!isParsed) {
+            this->stream->setPos(initialPos);
+        }
+
+        return isParsed;
+    }
+
+    size_t parseEsc()
+    {
+        size_t res = 0;
+
+        char chr = this->stream->getCurrentSymbol();
+        switch (chr) {
+            case '\\':
+                res = this->statement1Esc();
+            break;
+        };
+
+        return res;
+    }
+
+    size_t statement1Esc()
+    {
+        size_t res = 0;
+        size_t initialPos = this->stream->getPos();
+
+        auto ruleName = TokenName::Esc;
+        
+        size_t parsedElement = 0;
+        char* streamData = NULL;
+        size_t parsedSize = 0;
+        bool cut = false;  // TODO
+
+        size_t initialElementPos = 0;
+        size_t parsedCount = 0;
+        
+        std::vector<GdlNode*>::iterator last;
+        std::vector<GdlNode*>::iterator outerLast;
+        
+        bool isInlineParsed = false;
+
+        bool isParsed = false;
+        do {
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->systemParseString("\\", 1);
+            if (parsedSize == 0) {
+                // TODO: cut
+                break;
+            }
+            
+            res += parsedSize;
+
+            // ------------------------------------------------
+
+            parsedSize = res;
+            isInlineParsed = this->parseInline1_Esc_1(res);
+            if (isInlineParsed == false) {
+                res = parsedSize;
+            }
+            if (isInlineParsed == false) {
+                // TODO: cut
+                break;
+            }
+
+            // ------------------------------------------------
+            
+            isParsed = true;
+            
+        } while (false);
+
+        if (!isParsed) {
+            this->stream->setPos(initialPos);
+            return 0;
+        }
+
+        return res;
+    }
+
+    bool parseInline1_Esc_1(size_t& res)
+    {
+        bool isParsed = false;
+
+        char chr = this->stream->getCurrentSymbol();
+        switch (chr) {
+            case '"':
+            case '\\':
+            case '/':
+            case 'b':
+            case 'f':
+            case 'n':
+            case 'r':
+            case 't':
+                isParsed = this->statement1Inline1_Esc_1(res);
+            break;
+
+            case 'u':
+                isParsed = this->statement2Inline1_Esc_1(res);
+            break;
+        };
+
+        return isParsed;
+    }
+
+    bool statement1Inline1_Esc_1(size_t& res)
+    {
+        size_t initialPos = this->stream->getPos();
+    
+        auto ruleName = TokenName::Esc;
+        
+        size_t parsedElement = 0;
+        char* streamData = NULL;
+        size_t parsedSize = 0;
+        bool cut = false;  // TODO
+
+        size_t initialElementPos = 0;
+        size_t parsedCount = 0;
+        
+        std::vector<GdlNode*>::iterator last;
+        std::vector<GdlNode*>::iterator outerLast;
+        
+        bool isInlineParsed = false;
+
+        bool isParsed = false;
+        do {
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->systemParseRegexp("\"\"\\\\//bbffnnrrtt", 16);
+            if (parsedSize == 0) {
+                // TODO: cut
+                break;
+            }
+            
+            res += parsedSize;
+
+            // ------------------------------------------------
+
+            isParsed = true;
+            
+        } while (false);
+        
+        if (!isParsed) {
+            this->stream->setPos(initialPos);
+        }
+
+        return isParsed;
+    }
+
+    bool statement2Inline1_Esc_1(size_t& res)
+    {
+        size_t initialPos = this->stream->getPos();
+    
+        auto ruleName = TokenName::Esc;
+        
+        size_t parsedElement = 0;
+        char* streamData = NULL;
+        size_t parsedSize = 0;
+        bool cut = false;  // TODO
+
+        size_t initialElementPos = 0;
+        size_t parsedCount = 0;
+        
+        std::vector<GdlNode*>::iterator last;
+        std::vector<GdlNode*>::iterator outerLast;
+        
+        bool isInlineParsed = false;
+
+        bool isParsed = false;
+        do {
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->parseUnicode();
+            if (parsedSize == 0) {
+                // TODO: cut
+                break;
+            }
+            
+            res += parsedSize;
+
+            // ------------------------------------------------
+
+            isParsed = true;
+            
+        } while (false);
+        
+        if (!isParsed) {
+            this->stream->setPos(initialPos);
+        }
+
+        return isParsed;
+    }
+
+    size_t parseUnicode()
+    {
+        size_t res = 0;
+
+        char chr = this->stream->getCurrentSymbol();
+        switch (chr) {
+            case 'u':
+                res = this->statement1Unicode();
+            break;
+        };
+
+        return res;
+    }
+
+    size_t statement1Unicode()
+    {
+        size_t res = 0;
+        size_t initialPos = this->stream->getPos();
+
+        auto ruleName = TokenName::Unicode;
+        
+        size_t parsedElement = 0;
+        char* streamData = NULL;
+        size_t parsedSize = 0;
+        bool cut = false;  // TODO
+
+        size_t initialElementPos = 0;
+        size_t parsedCount = 0;
+        
+        std::vector<GdlNode*>::iterator last;
+        std::vector<GdlNode*>::iterator outerLast;
+        
+        bool isInlineParsed = false;
+
+        bool isParsed = false;
+        do {
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->systemParseString("u", 1);
+            if (parsedSize == 0) {
+                // TODO: cut
+                break;
+            }
+            
+            res += parsedSize;
+
+            // ------------------------------------------------
+
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->parseHex();
+            if (parsedSize == 0) {
+                // TODO: cut
+                break;
+            }
+            
+            res += parsedSize;
+
+            // ------------------------------------------------
+
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->parseHex();
+            if (parsedSize == 0) {
+                // TODO: cut
+                break;
+            }
+            
+            res += parsedSize;
+
+            // ------------------------------------------------
+
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->parseHex();
+            if (parsedSize == 0) {
+                // TODO: cut
+                break;
+            }
+            
+            res += parsedSize;
+
+            // ------------------------------------------------
+
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->parseHex();
+            if (parsedSize == 0) {
+                // TODO: cut
+                break;
+            }
+            
+            res += parsedSize;
+
+            // ------------------------------------------------
+            
+            isParsed = true;
+            
+        } while (false);
+
+        if (!isParsed) {
+            this->stream->setPos(initialPos);
+            return 0;
+        }
+
+        return res;
+    }
+
+    size_t parseHex()
+    {
+        size_t res = 0;
+
+        char chr = this->stream->getCurrentSymbol();
+        switch (chr) {
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9':
+            case 'a':
+            case 'b':
+            case 'c':
+            case 'd':
+            case 'e':
+            case 'f':
+            case 'A':
+            case 'B':
+            case 'C':
+            case 'D':
+            case 'E':
+            case 'F':
+                res = this->statement1Hex();
+            break;
+        };
+
+        return res;
+    }
+
+    size_t statement1Hex()
+    {
+        size_t res = 0;
+        size_t initialPos = this->stream->getPos();
+
+        auto ruleName = TokenName::Hex;
+        
+        size_t parsedElement = 0;
+        char* streamData = NULL;
+        size_t parsedSize = 0;
+        bool cut = false;  // TODO
+
+        size_t initialElementPos = 0;
+        size_t parsedCount = 0;
+        
+        std::vector<GdlNode*>::iterator last;
+        std::vector<GdlNode*>::iterator outerLast;
+        
+        bool isInlineParsed = false;
+
+        bool isParsed = false;
+        do {
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->systemParseRegexp("09afAF", 6);
             if (parsedSize == 0) {
                 // TODO: cut
                 break;

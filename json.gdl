@@ -1,6 +1,6 @@
 /* Ported from https://github.com/antlr/grammars-v4/blob/master/json/JSON.g4 */
 
-Json
+Json(S)
    : Value
    ;
 
@@ -17,7 +17,7 @@ Arr
    : '['! (Value (',' Value)*)? ']'
    ;
 
-Value
+Value(S)
    : Obj
    | String
    | Number
@@ -27,8 +27,8 @@ Value
    | 'null'
    ;
 
-String
-   : '"'={setKeepSpaces}! SafeCodePoint*>> '"'={clearKeepSpaces}
+String(S)
+   : '"'! SafeCodePoint*>> '"'
    ;
 
 /*

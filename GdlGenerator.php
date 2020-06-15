@@ -473,10 +473,8 @@ SRC;
 
         foreach ($sameIndexesChars as $char) {
             $char = $this->generateSymbolStr($char, 1);
-            $content .= <<<SRC
-            case '{$char}':
-
-SRC;
+            $content .= "
+            case '{$char}':";
         }
 
         foreach ($statementIndexList as $i => $statementIndex) {
@@ -484,37 +482,26 @@ SRC;
 
             if (!$isInline) {
                 if ($i === 0) {
-                    $content .= <<<SRC
-                res = this->{$statementMethodName}();
-
-SRC;
+                    $content .= "
+                res = this->{$statementMethodName}();";
                 } else {
-                    $content .= <<<SRC
-                if (res == NULL) res = this->{$statementMethodName}();
-
-SRC;
+                    $content .= "
+                if (res == NULL) res = this->{$statementMethodName}();";
                 }
             }
             else {
                 if ($i === 0) {
-                    $content .= <<<SRC
-                isParsed = this->{$statementMethodName}(res);
-
-SRC;
+                    $content .= "
+                isParsed = this->{$statementMethodName}(res);";
                 } else {
-                    $content .= <<<SRC
-                if (isParsed == false) isParsed = this->{$statementMethodName}(res);
-
-SRC;
+                    $content .= "
+                if (isParsed == false) isParsed = this->{$statementMethodName}(res);";
                 }
             }
         }
 
-        $content .= <<<SRC
-            break;
-
-
-SRC;
+        $content .= "
+            break;" . "\n";
 
         return $content;
     }
@@ -523,8 +510,15 @@ SRC;
     {
         $content = '';
 
-        // TODO: check keep spaces flag
-        $content .= 'this->skipSpaces();' . "\n";
+        $ruleFlags = $this->ruleMap[$this->currentRuleName]->get('Flags');
+        $keepSpaces = ($ruleFlags !== null && $ruleFlags->get('KeepSpaces') !== null);
+        $isLexeme = ($ruleFlags !== null && $ruleFlags->get('Lexeme') !== null);
+        $needKeepSpaces = ($keepSpaces || $isLexeme);
+
+        if (!$needKeepSpaces && $this->currentRuleName === array_key_first($this->ruleMap)) {
+            // skip initial spaces only for main rule
+            $content .= 'this->skipSpaces();' . "\n";
+        }
 
         $expressionList = $statement->getArray('Expression');
         $inlineRuleIndex = 0;
@@ -544,7 +538,9 @@ SRC;
             $expressionContent = $this->generateExpressionCode($ruleName, $expression, $lookAheadElement, $inlineRuleIndex, $statementIndex);
 
             $content .= "\n" . '            ' . trim($expressionContent) . "\n";
-            $content .= "\n" . '            this->skipSpaces();' . "\n";
+            if (!$needKeepSpaces) {
+                $content .= "\n" . '            this->skipSpaces();' . "\n";
+            }
             $content .= "\n" . '            // ------------------------------------------------' . "\n";
         }
 

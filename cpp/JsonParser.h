@@ -141,8 +141,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             parsedElement = this->parseValue();
             if (parsedElement == NULL) {
                 // TODO: cut
@@ -150,8 +148,6 @@ public:
             }
             if (res == NULL) res = new GdlNode(ruleName);
             res->addToList(parsedElement);
-
-            this->skipSpaces();
 
             // ------------------------------------------------
             
@@ -209,8 +205,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseString("{", 1);
             if (parsedSize == 0) {
@@ -323,8 +317,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseString(",", 1);
             if (parsedSize == 0) {
@@ -381,8 +373,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseString("{", 1);
             if (parsedSize == 0) {
@@ -464,8 +454,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             parsedElement = this->parseString();
             if (parsedElement == NULL) {
                 // TODO: cut
@@ -557,8 +545,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseString("[", 1);
             if (parsedSize == 0) {
@@ -668,8 +654,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             parsedElement = this->parseValue();
             if (parsedElement == NULL) {
                 // TODO: cut
@@ -750,8 +734,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseString(",", 1);
             if (parsedSize == 0) {
@@ -861,8 +843,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             parsedElement = this->parseObj();
             if (parsedElement == NULL) {
                 // TODO: cut
@@ -870,8 +850,6 @@ public:
             }
             if (res == NULL) res = new GdlNode(ruleName);
             res->addToList(parsedElement);
-
-            this->skipSpaces();
 
             // ------------------------------------------------
             
@@ -909,8 +887,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             parsedElement = this->parseString();
             if (parsedElement == NULL) {
                 // TODO: cut
@@ -918,8 +894,6 @@ public:
             }
             if (res == NULL) res = new GdlNode(ruleName);
             res->addToList(parsedElement);
-
-            this->skipSpaces();
 
             // ------------------------------------------------
             
@@ -957,8 +931,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             parsedElement = this->parseNumber();
             if (parsedElement == NULL) {
                 // TODO: cut
@@ -966,8 +938,6 @@ public:
             }
             if (res == NULL) res = new GdlNode(ruleName);
             res->addToList(parsedElement);
-
-            this->skipSpaces();
 
             // ------------------------------------------------
             
@@ -1005,8 +975,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             parsedElement = this->parseArr();
             if (parsedElement == NULL) {
                 // TODO: cut
@@ -1014,8 +982,6 @@ public:
             }
             if (res == NULL) res = new GdlNode(ruleName);
             res->addToList(parsedElement);
-
-            this->skipSpaces();
 
             // ------------------------------------------------
             
@@ -1053,8 +1019,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseString("true", 4);
             if (parsedSize == 0) {
@@ -1064,8 +1028,6 @@ public:
             if (res == NULL) res = new GdlNode(ruleName);
             parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
-
-            this->skipSpaces();
 
             // ------------------------------------------------
             
@@ -1103,8 +1065,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseString("false", 5);
             if (parsedSize == 0) {
@@ -1114,8 +1074,6 @@ public:
             if (res == NULL) res = new GdlNode(ruleName);
             parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
-
-            this->skipSpaces();
 
             // ------------------------------------------------
             
@@ -1153,8 +1111,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseString("null", 4);
             if (parsedSize == 0) {
@@ -1164,8 +1120,6 @@ public:
             if (res == NULL) res = new GdlNode(ruleName);
             parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
-
-            this->skipSpaces();
 
             // ------------------------------------------------
             
@@ -1222,8 +1176,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseString("\"", 1);
             if (parsedSize == 0) {
@@ -1233,8 +1185,6 @@ public:
             if (res == NULL) res = new GdlNode(ruleName);
             parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
-
-            this->skipSpaces();
 
             // ------------------------------------------------
 
@@ -1258,8 +1208,6 @@ public:
                 res->addToList(parsedElement);
             }
 
-            this->skipSpaces();
-
             // ------------------------------------------------
 
             streamData = this->stream->getCurrentDataPtr(); 
@@ -1271,8 +1219,6 @@ public:
             if (res == NULL) res = new GdlNode(ruleName);
             parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
-
-            this->skipSpaces();
 
             // ------------------------------------------------
             
@@ -1552,8 +1498,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseRegexp("\x20\xFF", 2);
             if (parsedSize == 0) {
@@ -1631,8 +1575,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseString("-", 1);
             if (! (parsedSize == 0)) {
@@ -1732,8 +1674,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseString(".", 1);
             if (parsedSize == 0) {
@@ -1833,8 +1773,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseString("0", 1);
             if (parsedSize == 0) {
@@ -1883,8 +1821,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseRegexp("19", 2);
             if (parsedSize == 0) {
@@ -1972,8 +1908,6 @@ public:
 
         bool isParsed = false;
         do {
-            this->skipSpaces();
-
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseRegexp("EEee", 4);
             if (parsedSize == 0) {

@@ -22,3 +22,5 @@ Engine in PHP version takes 367 lines of code. Engine in C++ version takes a lit
 
 Description:  
 https://habr.com/ru/post/506188/
+
+Also there is a generator for C++ code in a branch [generator](../../tree/generator)

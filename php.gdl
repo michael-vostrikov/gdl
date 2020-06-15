@@ -27,11 +27,11 @@ NamespaceName:
     NamespacePart ('\\' NamespacePart)*
 ;
 
-NamespacePart:
+NamespacePart(L):
     ID
 ;
 
-ID:
+ID(L):
     [a-zA-Z_] [a-zA-Z_0-9]*
 ;
 
@@ -46,7 +46,7 @@ ClassDeclaration:
         '{' ClassBody? '}'
 ;
 
-ClassName:
+ClassName(L):
     ID
 ;
 
@@ -76,7 +76,7 @@ PropertyName:
     VariableName
 ;
 
-VariableName:
+VariableName(L):
     '$'! ID
 ;
 
@@ -95,7 +95,7 @@ FunctionDeclaration:
         '{' FunctionBody? '}'
 ;
 
-FunctionName:
+FunctionName(L):
     ID
 ;
 
@@ -160,7 +160,7 @@ VariableReference:
     (ClassReference '::')? (VariableName | ConstantName)
 ;
 
-ConstantName:
+ConstantName(L):
     ID
 ;
 
@@ -356,14 +356,14 @@ DoubleQuoteString(S):
 ;
 
 NowdocString(S):
-    '<<<\'' StringTag={str,setStringStart} '\'' '\n' Symbol*>> ('\n' StringTag={str,checkStringEnd})
+    '<<<\'' StringTag={setStringStart} '\'' '\n' Symbol*>> ('\n' StringTag={checkStringEnd})
 ;
 
 HeredocString(S):
-    '<<<' StringTag={str,setStringStart} '\n' Symbol*>> ('\n' StringTag={str,checkStringEnd})
+    '<<<' StringTag={setStringStart} '\n' Symbol*>> ('\n' StringTag={checkStringEnd})
 ;
 
-StringTag:
+StringTag(L):
     [a-zA-Z]+
 ;
 
@@ -377,7 +377,7 @@ HexCodeSymbol:
     '\\x' HexDigit HexDigit
 ;
 
-HexDigit:
+HexDigit(L):
     [0-9A-F]
 ;
 
@@ -385,7 +385,7 @@ EscapedSymbol:
     '\\'! AnySymbol
 ;
 
-AnySymbol:
+AnySymbol(L):
     .
 ;
 

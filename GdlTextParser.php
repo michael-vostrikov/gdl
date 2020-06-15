@@ -31,7 +31,7 @@ class GdlTextParser extends GdlParser
 
         $ruleFlags = $rule->get('Flags');
         $prevNeedKeepSpaces = $this->needKeepSpaces;
-        $this->needKeepSpaces = ($ruleFlags !== null && $ruleFlags->get('KeepSpaces') !== null);
+        $this->needKeepSpaces = ($ruleFlags !== null && ($ruleFlags->get('KeepSpaces') !== null || $ruleFlags->get('Lexeme') !== null));
 
         $res = parent::parseRule($rule);
 
@@ -40,9 +40,9 @@ class GdlTextParser extends GdlParser
         return $res;
     }
 
-    protected function parseExpression(GdlNode $element, ?GdlNode $lookAheadElement = null)
+    protected function parseExpression(GdlNode $expression, ?GdlNode $lookAheadElement = null)
     {
-        $res = parent::parseExpression($element, $lookAheadElement);
+        $res = parent::parseExpression($expression, $lookAheadElement);
 
         if ($res !== null && !$this->needKeepSpaces) {
             $this->skipSpaces();

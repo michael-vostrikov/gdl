@@ -9,6 +9,13 @@ protected:
     Stream* stream;
 
 public:
+    
+    enum RuleName {
+        Empty, Json,Obj,Pair,Arr,Value,String,Esc,Unicode,Hex,SafeCodePoint,Number,Int,Exp
+    };
+
+    static const char* ruleNames[];
+    
 
     JsonParser(Stream* stream): stream(stream)
     {
@@ -80,10 +87,6 @@ public:
     }
     
     
-            enum TokenName {
-                Empty, Json,Obj,Pair,Arr,Value,String,Esc,Unicode,Hex,SafeCodePoint,Number,Int,Exp
-            };
-        
 
     GdlNode* parseJson()
     {
@@ -120,7 +123,7 @@ public:
         GdlNode* res = NULL;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Json;
+        auto ruleName = RuleName::Json;
         
         GdlNode* parsedElement = NULL;
         char* streamData = NULL;
@@ -179,7 +182,7 @@ public:
         GdlNode* res = NULL;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Obj;
+        auto ruleName = RuleName::Obj;
         
         GdlNode* parsedElement = NULL;
         char* streamData = NULL;
@@ -280,7 +283,7 @@ public:
     {
         size_t initialPos = this->stream->getPos();
     
-        auto ruleName = TokenName::Obj;
+        auto ruleName = RuleName::Obj;
         
         GdlNode* parsedElement = NULL;
         char* streamData = NULL;
@@ -337,7 +340,7 @@ public:
         GdlNode* res = NULL;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Obj;
+        auto ruleName = RuleName::Obj;
         
         GdlNode* parsedElement = NULL;
         char* streamData = NULL;
@@ -409,7 +412,7 @@ public:
         GdlNode* res = NULL;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Pair;
+        auto ruleName = RuleName::Pair;
         
         GdlNode* parsedElement = NULL;
         char* streamData = NULL;
@@ -495,7 +498,7 @@ public:
         GdlNode* res = NULL;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Arr;
+        auto ruleName = RuleName::Arr;
         
         GdlNode* parsedElement = NULL;
         char* streamData = NULL;
@@ -596,7 +599,7 @@ public:
     {
         size_t initialPos = this->stream->getPos();
     
-        auto ruleName = TokenName::Arr;
+        auto ruleName = RuleName::Arr;
         
         GdlNode* parsedElement = NULL;
         char* streamData = NULL;
@@ -672,7 +675,7 @@ public:
     {
         size_t initialPos = this->stream->getPos();
     
-        auto ruleName = TokenName::Arr;
+        auto ruleName = RuleName::Arr;
         
         GdlNode* parsedElement = NULL;
         char* streamData = NULL;
@@ -777,7 +780,7 @@ public:
         GdlNode* res = NULL;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Value;
+        auto ruleName = RuleName::Value;
         
         GdlNode* parsedElement = NULL;
         char* streamData = NULL;
@@ -821,7 +824,7 @@ public:
         GdlNode* res = NULL;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Value;
+        auto ruleName = RuleName::Value;
         
         GdlNode* parsedElement = NULL;
         char* streamData = NULL;
@@ -867,7 +870,7 @@ public:
         GdlNode* res = NULL;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Value;
+        auto ruleName = RuleName::Value;
         
         GdlNode* parsedElement = NULL;
         char* streamData = NULL;
@@ -913,7 +916,7 @@ public:
         GdlNode* res = NULL;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Value;
+        auto ruleName = RuleName::Value;
         
         GdlNode* parsedElement = NULL;
         char* streamData = NULL;
@@ -957,7 +960,7 @@ public:
         GdlNode* res = NULL;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Value;
+        auto ruleName = RuleName::Value;
         
         GdlNode* parsedElement = NULL;
         char* streamData = NULL;
@@ -1001,7 +1004,7 @@ public:
         GdlNode* res = NULL;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Value;
+        auto ruleName = RuleName::Value;
         
         GdlNode* parsedElement = NULL;
         char* streamData = NULL;
@@ -1045,7 +1048,7 @@ public:
         GdlNode* res = NULL;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Value;
+        auto ruleName = RuleName::Value;
         
         GdlNode* parsedElement = NULL;
         char* streamData = NULL;
@@ -1103,7 +1106,7 @@ public:
         size_t res = 0;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::String;
+        auto ruleName = RuleName::String;
         
         size_t parsedElement = 0;
         char* streamData = NULL;
@@ -1424,7 +1427,7 @@ public:
     {
         size_t initialPos = this->stream->getPos();
     
-        auto ruleName = TokenName::String;
+        auto ruleName = RuleName::String;
         
         size_t parsedElement = 0;
         char* streamData = NULL;
@@ -1467,7 +1470,7 @@ public:
     {
         size_t initialPos = this->stream->getPos();
     
-        auto ruleName = TokenName::String;
+        auto ruleName = RuleName::String;
         
         size_t parsedElement = 0;
         char* streamData = NULL;
@@ -1525,7 +1528,7 @@ public:
         size_t res = 0;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Esc;
+        auto ruleName = RuleName::Esc;
         
         size_t parsedElement = 0;
         char* streamData = NULL;
@@ -1606,7 +1609,7 @@ public:
     {
         size_t initialPos = this->stream->getPos();
     
-        auto ruleName = TokenName::Esc;
+        auto ruleName = RuleName::Esc;
         
         size_t parsedElement = 0;
         char* streamData = NULL;
@@ -1649,7 +1652,7 @@ public:
     {
         size_t initialPos = this->stream->getPos();
     
-        auto ruleName = TokenName::Esc;
+        auto ruleName = RuleName::Esc;
         
         size_t parsedElement = 0;
         char* streamData = NULL;
@@ -1707,7 +1710,7 @@ public:
         size_t res = 0;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Unicode;
+        auto ruleName = RuleName::Unicode;
         
         size_t parsedElement = 0;
         char* streamData = NULL;
@@ -1831,7 +1834,7 @@ public:
         size_t res = 0;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Hex;
+        auto ruleName = RuleName::Hex;
         
         size_t parsedElement = 0;
         char* streamData = NULL;
@@ -2113,7 +2116,7 @@ public:
         size_t res = 0;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::SafeCodePoint;
+        auto ruleName = RuleName::SafeCodePoint;
         
         size_t parsedElement = 0;
         char* streamData = NULL;
@@ -2182,7 +2185,7 @@ public:
         size_t res = 0;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Number;
+        auto ruleName = RuleName::Number;
         
         size_t parsedElement = 0;
         char* streamData = NULL;
@@ -2270,7 +2273,7 @@ public:
     {
         size_t initialPos = this->stream->getPos();
     
-        auto ruleName = TokenName::Number;
+        auto ruleName = RuleName::Number;
         
         size_t parsedElement = 0;
         char* streamData = NULL;
@@ -2358,7 +2361,7 @@ public:
         size_t res = 0;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Int;
+        auto ruleName = RuleName::Int;
         
         size_t parsedElement = 0;
         char* streamData = NULL;
@@ -2403,7 +2406,7 @@ public:
         size_t res = 0;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Int;
+        auto ruleName = RuleName::Int;
         
         size_t parsedElement = 0;
         char* streamData = NULL;
@@ -2476,7 +2479,7 @@ public:
         size_t res = 0;
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::Exp;
+        auto ruleName = RuleName::Exp;
         
         size_t parsedElement = 0;
         char* streamData = NULL;
@@ -2536,3 +2539,9 @@ public:
         return res;
     }
 };
+
+
+const char* JsonParser::ruleNames[] = {
+    "", "Json","Obj","Pair","Arr","Value","String","Esc","Unicode","Hex","SafeCodePoint","Number","Int","Exp"
+};
+

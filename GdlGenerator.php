@@ -39,10 +39,27 @@ class GdlGenerator
         return $content;
     }
 
-    // TODO: generate rule tokens
-
     public function generateClassWrapper(string $classBody)
     {
+
+        $ruleNameList = [];
+        foreach ($this->ruleMap as $rule) {
+            $ruleName = $this->getRuleName($rule);
+            $ruleNameList[] = $ruleName;
+        }
+
+        $enum = "
+    enum RuleName {
+        Empty, " . implode(',', $ruleNameList) . "
+    };
+";
+
+        $ruleNames = "
+const char* {$this->grammarName}Parser::ruleNames[] = {
+    \"\", \"" . implode('","', $ruleNameList) . "\"
+};
+";
+
         return <<<SRC
 #include "StringDescriptor.h"
 #include "GdlNode.h"
@@ -55,6 +72,9 @@ protected:
     Stream* stream;
 
 public:
+    {$enum}
+    static const char* ruleNames[];
+    
 
     {$this->grammarName}Parser(Stream* stream): stream(stream)
     {
@@ -128,24 +148,14 @@ public:
     {$classBody}
 };
 
+{$ruleNames}
+
 SRC;
     }
 
     public function generateClassBody()
     {
         $content = '';
-
-        $ruleNameList = [];
-        foreach ($this->ruleMap as $rule) {
-            $ruleName = $this->getRuleName($rule);
-            $ruleNameList[] = $ruleName;
-        }
-
-        $content .= "
-            enum TokenName {
-                Empty, " . implode(',', $ruleNameList) . "
-            };
-        ";
 
         foreach ($this->ruleMap as $rule) {
             $content .= $this->generateRuleMethod($rule);
@@ -231,7 +241,7 @@ SRC;
         {$resultType} res = {$emptyValue};
         size_t initialPos = this->stream->getPos();
 
-        auto ruleName = TokenName::{$this->currentRuleName};
+        auto ruleName = RuleName::{$this->currentRuleName};
         
         {$resultType} parsedElement = {$emptyValue};
         char* streamData = NULL;
@@ -318,7 +328,7 @@ SRC;
     {
         size_t initialPos = this->stream->getPos();
     
-        auto ruleName = TokenName::{$this->currentRuleName};
+        auto ruleName = RuleName::{$this->currentRuleName};
         
         {$resultType} parsedElement = {$emptyValue};
         char* streamData = NULL;

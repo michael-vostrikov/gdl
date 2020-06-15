@@ -16,11 +16,37 @@ public:
 
     static const char* ruleNames[];
     
+    std::vector<GdlNode*> pool;
+    
 
     JsonParser(Stream* stream): stream(stream)
     {
+        this->pool.reserve(stream->getContent().getSize() / 2);
+    }
+    
+    virtual ~JsonParser()
+    {
+        for (auto it = this->pool.begin(); it < this->pool.end(); ++it) {
+            GdlNode* node = *it;
+            delete node;
+        }
+    }
+    
+    GdlNode* createGdlNode(uint32_t ruleName)
+    {
+        auto node = new GdlNode(ruleName);
+        this->pool.push_back(node);
+
+        return node;
     }
 
+    GdlNode* createGdlNode(uint32_t ruleName, StringDescriptor value)
+    {
+        auto node = new GdlNode(ruleName, value);
+        this->pool.push_back(node);
+        return node;
+    }
+    
     size_t systemParseString(const char* string, size_t size)
     {
         size_t initialPos = this->stream->getPos();
@@ -146,13 +172,13 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
             res->addToList(parsedElement);
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
@@ -207,7 +233,7 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
 
             this->skipSpaces();
 
@@ -218,7 +244,7 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
             res->addToList(parsedElement);
 
             this->skipSpaces();
@@ -245,14 +271,14 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
 
             this->skipSpaces();
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
@@ -311,7 +337,7 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
 
             this->skipSpaces();
 
@@ -322,7 +348,7 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
             res->addToList(parsedElement);
 
             this->skipSpaces();
@@ -377,7 +403,7 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
 
             this->skipSpaces();
 
@@ -389,14 +415,14 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
 
             this->skipSpaces();
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
@@ -450,8 +476,8 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(String, StringDescriptor(streamData, parsedSize));
+            if (res == NULL) res = this->createGdlNode(ruleName);
+            parsedElement = this->createGdlNode(String, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
 
             this->skipSpaces();
@@ -464,7 +490,7 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
 
             this->skipSpaces();
 
@@ -475,7 +501,7 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
             res->addToList(parsedElement);
 
             this->skipSpaces();
@@ -483,7 +509,7 @@ public:
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
@@ -537,7 +563,7 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
 
             this->skipSpaces();
 
@@ -559,14 +585,14 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
 
             this->skipSpaces();
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
@@ -640,7 +666,7 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
             res->addToList(parsedElement);
 
             this->skipSpaces();
@@ -728,7 +754,7 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
 
             this->skipSpaces();
 
@@ -739,7 +765,7 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
             res->addToList(parsedElement);
 
             this->skipSpaces();
@@ -841,13 +867,13 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
             res->addToList(parsedElement);
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
@@ -887,14 +913,14 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(String, StringDescriptor(streamData, parsedSize));
+            if (res == NULL) res = this->createGdlNode(ruleName);
+            parsedElement = this->createGdlNode(String, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
@@ -934,14 +960,14 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(Number, StringDescriptor(streamData, parsedSize));
+            if (res == NULL) res = this->createGdlNode(ruleName);
+            parsedElement = this->createGdlNode(Number, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
@@ -980,13 +1006,13 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
             res->addToList(parsedElement);
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
@@ -1026,12 +1052,12 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
@@ -1071,12 +1097,12 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
@@ -1116,12 +1142,12 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) res = new GdlNode(ruleName);
+            if (res == NULL) res = this->createGdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {

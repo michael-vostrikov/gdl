@@ -89,11 +89,37 @@ public:
     {$enum}
     static const char* ruleNames[];
     
+    std::vector<GdlNode*> pool;
+    
 
     {$this->grammarName}Parser(Stream* stream): stream(stream)
     {
+        this->pool.reserve(stream->getContent().getSize() / 2);
+    }
+    
+    virtual ~{$this->grammarName}Parser()
+    {
+        for (auto it = this->pool.begin(); it < this->pool.end(); ++it) {
+            GdlNode* node = *it;
+            delete node;
+        }
+    }
+    
+    GdlNode* createGdlNode(uint32_t ruleName)
+    {
+        auto node = new GdlNode(ruleName);
+        this->pool.push_back(node);
+
+        return node;
     }
 
+    GdlNode* createGdlNode(uint32_t ruleName, StringDescriptor value)
+    {
+        auto node = new GdlNode(ruleName, value);
+        this->pool.push_back(node);
+        return node;
+    }
+    
     size_t systemParseString(const char* string, size_t size)
     {
         size_t initialPos = this->stream->getPos();
@@ -209,7 +235,7 @@ SRC;
 
         $resultType = 'GdlNode*';
         $emptyValue = 'NULL';
-        $initCode = 'if (res == NULL) res = new GdlNode(ruleName);';
+        $initCode = 'if (res == NULL) res = this->createGdlNode(ruleName);';
         if ($isLexeme) {
             $resultType = 'size_t';
             $emptyValue = '0';
@@ -716,7 +742,7 @@ SRC;
             $content = "
             parsedCount = 0;
             "
-            . (!$currentIsLexeme ? "if (res == NULL) res = new GdlNode(ruleName);\n            " : "")
+            . (!$currentIsLexeme ? "if (res == NULL) res = this->createGdlNode(ruleName);\n            " : "")
             . (!$currentIsLexeme ? "outerLast = res->getListValue().end();" : "outerParsedSize = res;\n            ")
             . "
             while (true) {
@@ -743,7 +769,7 @@ SRC;
 
             $content = "
             "
-            . (!$currentIsLexeme ? "if (res == NULL) res = new GdlNode(ruleName);\n            " : "")
+            . (!$currentIsLexeme ? "if (res == NULL) res = this->createGdlNode(ruleName);\n            " : "")
             . (!$currentIsLexeme ? "outerLast = res->getListValue().end();" : "outerParsedSize = res;\n            ")
             . "
             countVal = {$countVal};
@@ -783,7 +809,7 @@ SRC;
         list(,,, $currentIsLexeme) = $this->generarateRuleParams($this->currentRuleName);
 
         if (!$currentIsLexeme && $elementType !== 'InlineRule') {
-            $createResultStr = 'if (res == NULL) res = new GdlNode(ruleName);';
+            $createResultStr = 'if (res == NULL) res = this->createGdlNode(ruleName);';
         }
         else {
             $createResultStr = '';
@@ -816,7 +842,7 @@ SRC;
 
                 if (!$currentIsLexeme) {
                     $addElementStr = "
-            parsedElement = new GdlNode({$innerRuleName}, StringDescriptor(streamData, parsedSize));
+            parsedElement = this->createGdlNode({$innerRuleName}, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
             ";
                 }
@@ -862,7 +888,7 @@ SRC;
 
                 /*
                 $addElementStr = '
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
+            parsedElement = this->createGdlNode(0, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
             ';
                 */
@@ -890,7 +916,7 @@ SRC;
 
                 /*
                 $addElementStr = '
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
+            parsedElement = this->createGdlNode(0, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
             ';
                 */

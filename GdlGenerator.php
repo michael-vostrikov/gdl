@@ -31,8 +31,14 @@ class GdlGenerator
         file_put_contents($filename, $content);
     }
 
+    public $elementFunctions = [];
+    public $countFunctions = [];
+
     public function generateClass()
     {
+        $this->elementFunctions = [];
+        $this->countFunctions = [];
+
         $classBody = $this->generateClassBody();
         $content = $this->generateClassWrapper($classBody);
 
@@ -59,6 +65,14 @@ const char* {$this->grammarName}Parser::ruleNames[] = {
     \"\", \"" . implode('","', $ruleNameList) . "\"
 };
 ";
+
+        $functionDeclarationsCode = '';
+        foreach($this->elementFunctions as $functionName => $argumentType) {
+            $functionDeclarationsCode .= "    virtual void {$functionName}({$argumentType}& parsedElement) = 0;" . "\n";
+        }
+        foreach($this->countFunctions as $functionName) {
+            $functionDeclarationsCode .= "    virtual int {$functionName}() = 0;" . "\n";
+        }
 
         return <<<SRC
 #include "StringDescriptor.h"
@@ -146,6 +160,8 @@ public:
     }
     
     {$classBody}
+    
+    {$functionDeclarationsCode}
 };
 
 {$ruleNames}
@@ -254,6 +270,7 @@ SRC;
         std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
+        size_t countVal = 0;
         
         bool isInlineParsed = false;
 
@@ -342,6 +359,7 @@ SRC;
         std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
+        size_t countVal = 0;
         
         bool isInlineParsed = false;
 
@@ -577,11 +595,9 @@ SRC;
     {
         $content = '';
 
-        // TODO: functions
-
         $quantifier = $expression->get('Quantifier');
         $quantifierType = '';
-        $countVal = 0;
+        $countVal = '';
         if ($quantifier !== null) {
             $count = $quantifier->get('Count');
             if ($count === null) {
@@ -589,18 +605,30 @@ SRC;
             }
             else {
                 $quantifierType = '{}';
-                if ($count->get('FunctionName') === null) {
+                if ($count->get('FunctionCall') === null) {
                     $countVal = (int)$count->get('IntValue')->getValue();
                 }
                 else {
-                    throw new Exception('Not implemented');
+                    $countFunctionName = $count->get('FunctionCall')->get('FunctionName')->getValue();
+                    $this->countFunctions[] = $countFunctionName;
+
+                    $countVal = "this->$countFunctionName()";
                 }
             }
         }
 
         $element = $expression->get('Element');
 
-        list($elementCode, $breakCondition, $addElementStr, $createResultStr) = $this->generateElementCode($ruleName, $element, $inlineRuleIndex, $statementIndex);
+        $functionNameList = [];
+        if ($expression->get('FunctionCall') !== null) {
+            foreach ($expression->get('FunctionCall')->getArray('FunctionName') as $functionName) {
+                $functionNameList[] = $functionName->getValue();
+            }
+        }
+
+        list($elementCode, $breakCondition, $addElementStr, $createResultStr) = $this->generateElementCode($ruleName, $element, $inlineRuleIndex, $statementIndex, $functionNameList);
+
+
 
         if ($lookAheadElement !== null) {
             list($lookAheadElementCode, $lookAheadBreakCondition) = $this->generateElementCode($ruleName, $lookAheadElement, $inlineRuleIndex, $statementIndex);
@@ -658,11 +686,9 @@ SRC;
             }
             ";
         }
-        else if ($quantifierType === '+' || $quantifierType === '{}') {
+        else if ($quantifierType === '+') {
             $elementCode = str_replace("\n", "\n    ", $elementCode);
             list(,,, $currentIsLexeme) = $this->generarateRuleParams($this->currentRuleName);
-
-            $outerBreakCondition = ($quantifierType === '+' ? 'parsedCount < 1' : 'parsedCount != ' . $countVal);
 
             $content = "
             parsedCount = 0;
@@ -678,7 +704,33 @@ SRC;
                 
                 parsedCount++;
             }
-            if ({$outerBreakCondition}) {
+            if (parsedCount < 1) {
+                " . (!$currentIsLexeme ? "res->getListValue().erase(outerLast, res->getListValue().end());" : "res = outerParsedSize;") . "
+                // TODO: cut
+                break;
+            }
+            ";
+        }
+        else if ($quantifierType === '{}') {
+            $elementCode = str_replace("\n", "\n    ", $elementCode);
+            list(,,, $currentIsLexeme) = $this->generarateRuleParams($this->currentRuleName);
+
+            $content = "
+            parsedCount = 0;
+            " . (!$currentIsLexeme ? "outerLast = res->getListValue().end();" : "outerParsedSize = res;") . "
+            countVal = {$countVal};
+            while (parsedCount < countVal) {
+                {$elementCode}
+                if ({$breakCondition}) {
+                    break;
+                }
+
+                {$createResultStr}
+                {$addElementStr}
+
+                parsedCount++;
+            }
+            if (parsedCount != countVal) {
                 " . (!$currentIsLexeme ? "res->getListValue().erase(outerLast, res->getListValue().end());" : "res = outerParsedSize;") . "
                 // TODO: cut
                 break;
@@ -689,7 +741,7 @@ SRC;
         return $content;
     }
 
-    public function generateElementCode(string $ruleName, GdlNode $element, int &$inlineRuleIndex, int $statementIndex)
+    public function generateElementCode(string $ruleName, GdlNode $element, int &$inlineRuleIndex, int $statementIndex, $functionNameList = [])
     {
         $specificElement = $element->getFirst();
         $elementType = $specificElement->getName();
@@ -709,6 +761,8 @@ SRC;
             $createResultStr = '';
         }
 
+        $elementVariableName = '';
+        $functionArgumentType = '';
         if ($elementType === 'RuleName') {
             $innerRuleName = $specificElement->getValue();
             $ruleMethodName = $this->generateRuleMethodName($innerRuleName);
@@ -717,6 +771,8 @@ SRC;
 
             if (!$isLexeme) {
                 $elementCode = "parsedElement = this->{$ruleMethodName}();";
+                $elementVariableName = 'parsedElement';
+                $functionArgumentType = 'GdlNode*';
                 $breakCondition = "parsedElement == {$emptyValue}";
                 $addElementStr = "res->addToList(parsedElement);";
             }
@@ -725,6 +781,8 @@ SRC;
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->{$ruleMethodName}();
             ";
+                $elementVariableName = 'parsedSize';
+                $functionArgumentType = 'size_t';
 
                 $breakCondition = "parsedSize == {$emptyValue}";
 
@@ -774,6 +832,8 @@ SRC;
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseString(\"{$str}\", $len);
             ";
+            $elementVariableName = 'parsedSize';
+            $functionArgumentType = 'size_t';
 
             $breakCondition = "parsedSize == 0";
 
@@ -800,6 +860,8 @@ SRC;
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseRegexp(\"{$str}\", $len);
             ";
+            $elementVariableName = 'parsedSize';
+            $functionArgumentType = 'size_t';
 
             $breakCondition = "parsedSize == 0";
 
@@ -820,9 +882,13 @@ SRC;
             }
         }
 
+        foreach ($functionNameList as $functionName) {
+            $elementCode .= "\n" . "            this->{$functionName}({$elementVariableName});";
+            $this->elementFunctions[$functionName] = $functionArgumentType;
+        }
+
         $elementCode = trim($elementCode);
         $addElementStr = trim($addElementStr);
-
 
         if ($isInlineRule) $inlineRuleIndex++;
 

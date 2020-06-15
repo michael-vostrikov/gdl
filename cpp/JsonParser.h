@@ -88,7 +88,6 @@ public:
     GdlNode* parseJson()
     {
         GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -113,16 +112,13 @@ public:
             break;
         };
 
-        if (res == NULL) {   
-            this->stream->setPos(initialPos);
-        }
-
         return res;
     }
 
     GdlNode* statement1Json()
     {
         GdlNode* res = NULL;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Json;
         
@@ -152,12 +148,11 @@ public:
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            if (res == NULL) res = new GdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
+            this->stream->setPos(initialPos);
             return NULL;
         }
 
@@ -167,7 +162,6 @@ public:
     GdlNode* parseObj()
     {
         GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -177,16 +171,13 @@ public:
             break;
         };
 
-        if (res == NULL) {   
-            this->stream->setPos(initialPos);
-        }
-
         return res;
     }
 
     GdlNode* statement1Obj()
     {
         GdlNode* res = NULL;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Obj;
         
@@ -232,19 +223,16 @@ public:
             // ------------------------------------------------
 
             while (true) {
-                initialElementPos = this->stream->getPos();
-
                 last = res->getListValue().end();
                 isInlineParsed = this->parseInline1_Obj_1(res);
                 if (isInlineParsed == false) {
                     res->getListValue().erase(last, res->getListValue().end());
                 }
                 if (isInlineParsed == false) {
-                    this->stream->setPos(initialElementPos);
                     break;
                 }
 
-                if (res == NULL) res = new GdlNode(ruleName);
+                
                 
             }
 
@@ -267,12 +255,11 @@ public:
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            if (res == NULL) res = new GdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
+            this->stream->setPos(initialPos);
             return NULL;
         }
 
@@ -282,7 +269,6 @@ public:
     bool parseInline1_Obj_1(GdlNode*& res)
     {
         bool isParsed = false;
-        size_t initialPos = this->stream->getPos();
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -291,15 +277,13 @@ public:
             break;
         };
 
-        if (isParsed == false) {   
-            this->stream->setPos(initialPos);
-        }
-
         return isParsed;
     }
 
     bool statement1Inline1_Obj_1(GdlNode*& res)
     {
+        size_t initialPos = this->stream->getPos();
+    
         auto ruleName = TokenName::Obj;
         
         GdlNode* parsedElement = NULL;
@@ -344,17 +328,20 @@ public:
             // ------------------------------------------------
 
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            if (res == NULL) res = new GdlNode(ruleName);
         } while (false);
         
+        if (!isParsed) {
+            this->stream->setPos(initialPos);
+        }
+
         return isParsed;
     }
 
     GdlNode* statement2Obj()
     {
         GdlNode* res = NULL;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Obj;
         
@@ -402,12 +389,11 @@ public:
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            if (res == NULL) res = new GdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
+            this->stream->setPos(initialPos);
             return NULL;
         }
 
@@ -417,7 +403,6 @@ public:
     GdlNode* parsePair()
     {
         GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -426,16 +411,13 @@ public:
             break;
         };
 
-        if (res == NULL) {   
-            this->stream->setPos(initialPos);
-        }
-
         return res;
     }
 
     GdlNode* statement1Pair()
     {
         GdlNode* res = NULL;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Pair;
         
@@ -454,12 +436,14 @@ public:
 
         bool isParsed = false;
         do {
-            parsedElement = this->parseString();
-            if (parsedElement == NULL) {
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->parseString();
+            if (parsedSize == 0) {
                 // TODO: cut
                 break;
             }
             if (res == NULL) res = new GdlNode(ruleName);
+            parsedElement = new GdlNode(String, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
 
             this->skipSpaces();
@@ -493,12 +477,11 @@ public:
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            if (res == NULL) res = new GdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
+            this->stream->setPos(initialPos);
             return NULL;
         }
 
@@ -508,7 +491,6 @@ public:
     GdlNode* parseArr()
     {
         GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -517,16 +499,13 @@ public:
             break;
         };
 
-        if (res == NULL) {   
-            this->stream->setPos(initialPos);
-        }
-
         return res;
     }
 
     GdlNode* statement1Arr()
     {
         GdlNode* res = NULL;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Arr;
         
@@ -565,7 +544,7 @@ public:
                 res->getListValue().erase(last, res->getListValue().end());
             }
             if (! (isInlineParsed == false)) {
-                if (res == NULL) res = new GdlNode(ruleName);
+                
                 
             }
 
@@ -588,12 +567,11 @@ public:
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            if (res == NULL) res = new GdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
+            this->stream->setPos(initialPos);
             return NULL;
         }
 
@@ -603,7 +581,6 @@ public:
     bool parseInline1_Arr_1(GdlNode*& res)
     {
         bool isParsed = false;
-        size_t initialPos = this->stream->getPos();
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -628,15 +605,13 @@ public:
             break;
         };
 
-        if (isParsed == false) {   
-            this->stream->setPos(initialPos);
-        }
-
         return isParsed;
     }
 
     bool statement1Inline1_Arr_1(GdlNode*& res)
     {
+        size_t initialPos = this->stream->getPos();
+    
         auto ruleName = TokenName::Arr;
         
         GdlNode* parsedElement = NULL;
@@ -667,19 +642,16 @@ public:
             // ------------------------------------------------
 
             while (true) {
-                initialElementPos = this->stream->getPos();
-
                 last = res->getListValue().end();
                 isInlineParsed = this->parseInline1_Inline1_Arr_1_1(res);
                 if (isInlineParsed == false) {
                     res->getListValue().erase(last, res->getListValue().end());
                 }
                 if (isInlineParsed == false) {
-                    this->stream->setPos(initialElementPos);
                     break;
                 }
 
-                if (res == NULL) res = new GdlNode(ruleName);
+                
                 
             }
 
@@ -688,18 +660,19 @@ public:
             // ------------------------------------------------
 
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            if (res == NULL) res = new GdlNode(ruleName);
         } while (false);
         
+        if (!isParsed) {
+            this->stream->setPos(initialPos);
+        }
+
         return isParsed;
     }
 
     bool parseInline1_Inline1_Arr_1_1(GdlNode*& res)
     {
         bool isParsed = false;
-        size_t initialPos = this->stream->getPos();
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -708,15 +681,13 @@ public:
             break;
         };
 
-        if (isParsed == false) {   
-            this->stream->setPos(initialPos);
-        }
-
         return isParsed;
     }
 
     bool statement1Inline1_Inline1_Arr_1_1(GdlNode*& res)
     {
+        size_t initialPos = this->stream->getPos();
+    
         auto ruleName = TokenName::Arr;
         
         GdlNode* parsedElement = NULL;
@@ -761,18 +732,19 @@ public:
             // ------------------------------------------------
 
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            if (res == NULL) res = new GdlNode(ruleName);
         } while (false);
         
+        if (!isParsed) {
+            this->stream->setPos(initialPos);
+        }
+
         return isParsed;
     }
 
     GdlNode* parseValue()
     {
         GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -815,16 +787,13 @@ public:
             break;
         };
 
-        if (res == NULL) {   
-            this->stream->setPos(initialPos);
-        }
-
         return res;
     }
 
     GdlNode* statement1Value()
     {
         GdlNode* res = NULL;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Value;
         
@@ -854,12 +823,11 @@ public:
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            if (res == NULL) res = new GdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
+            this->stream->setPos(initialPos);
             return NULL;
         }
 
@@ -869,6 +837,7 @@ public:
     GdlNode* statement2Value()
     {
         GdlNode* res = NULL;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Value;
         
@@ -887,23 +856,24 @@ public:
 
         bool isParsed = false;
         do {
-            parsedElement = this->parseString();
-            if (parsedElement == NULL) {
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->parseString();
+            if (parsedSize == 0) {
                 // TODO: cut
                 break;
             }
             if (res == NULL) res = new GdlNode(ruleName);
+            parsedElement = new GdlNode(String, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            if (res == NULL) res = new GdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
+            this->stream->setPos(initialPos);
             return NULL;
         }
 
@@ -913,6 +883,7 @@ public:
     GdlNode* statement3Value()
     {
         GdlNode* res = NULL;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Value;
         
@@ -931,23 +902,24 @@ public:
 
         bool isParsed = false;
         do {
-            parsedElement = this->parseNumber();
-            if (parsedElement == NULL) {
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->parseNumber();
+            if (parsedSize == 0) {
                 // TODO: cut
                 break;
             }
             if (res == NULL) res = new GdlNode(ruleName);
+            parsedElement = new GdlNode(Number, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            if (res == NULL) res = new GdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
+            this->stream->setPos(initialPos);
             return NULL;
         }
 
@@ -957,6 +929,7 @@ public:
     GdlNode* statement4Value()
     {
         GdlNode* res = NULL;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Value;
         
@@ -986,12 +959,11 @@ public:
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            if (res == NULL) res = new GdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
+            this->stream->setPos(initialPos);
             return NULL;
         }
 
@@ -1001,6 +973,7 @@ public:
     GdlNode* statement5Value()
     {
         GdlNode* res = NULL;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Value;
         
@@ -1032,12 +1005,11 @@ public:
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            if (res == NULL) res = new GdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
+            this->stream->setPos(initialPos);
             return NULL;
         }
 
@@ -1047,6 +1019,7 @@ public:
     GdlNode* statement6Value()
     {
         GdlNode* res = NULL;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Value;
         
@@ -1078,12 +1051,11 @@ public:
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            if (res == NULL) res = new GdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
+            this->stream->setPos(initialPos);
             return NULL;
         }
 
@@ -1093,6 +1065,7 @@ public:
     GdlNode* statement7Value()
     {
         GdlNode* res = NULL;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Value;
         
@@ -1124,22 +1097,20 @@ public:
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            if (res == NULL) res = new GdlNode(ruleName);
         } while (false);
 
         if (!isParsed) {
+            this->stream->setPos(initialPos);
             return NULL;
         }
 
         return res;
     }
 
-    GdlNode* parseString()
+    size_t parseString()
     {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+        size_t res = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -1148,20 +1119,17 @@ public:
             break;
         };
 
-        if (res == NULL) {   
-            this->stream->setPos(initialPos);
-        }
-
         return res;
     }
 
-    GdlNode* statement1String()
+    size_t statement1String()
     {
-        GdlNode* res = NULL;
+        size_t res = 0;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::String;
         
-        GdlNode* parsedElement = NULL;
+        size_t parsedElement = 0;
         char* streamData = NULL;
         size_t parsedSize = 0;
         bool cut = false;  // TODO
@@ -1182,15 +1150,14 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
+            
+            res += parsedSize;
 
             // ------------------------------------------------
 
             while (true) {
                 initialElementPos = this->stream->getPos();
-
+    
                 streamData = this->stream->getCurrentDataPtr(); 
                 parsedSize = this->systemParseString("\"", 1);
                 if (! (parsedSize == 0)) {
@@ -1198,14 +1165,14 @@ public:
                     break;
                 }
     
-                parsedElement = this->parseSafeCodePoint();
-                if (parsedElement == NULL) {
-                    this->stream->setPos(initialElementPos);
+                streamData = this->stream->getCurrentDataPtr(); 
+                parsedSize = this->parseSafeCodePoint();
+                if (parsedSize == 0) {
                     break;
                 }
 
-                if (res == NULL) res = new GdlNode(ruleName);
-                res->addToList(parsedElement);
+                
+                res += parsedSize;
             }
 
             // ------------------------------------------------
@@ -1216,29 +1183,26 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
+            
+            res += parsedSize;
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            
         } while (false);
 
         if (!isParsed) {
-            return NULL;
+            this->stream->setPos(initialPos);
+            return 0;
         }
 
         return res;
     }
 
-    GdlNode* parseSafeCodePoint()
+    size_t parseSafeCodePoint()
     {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+        size_t res = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -1470,20 +1434,17 @@ public:
             break;
         };
 
-        if (res == NULL) {   
-            this->stream->setPos(initialPos);
-        }
-
         return res;
     }
 
-    GdlNode* statement1SafeCodePoint()
+    size_t statement1SafeCodePoint()
     {
-        GdlNode* res = NULL;
+        size_t res = 0;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::SafeCodePoint;
         
-        GdlNode* parsedElement = NULL;
+        size_t parsedElement = 0;
         char* streamData = NULL;
         size_t parsedSize = 0;
         bool cut = false;  // TODO
@@ -1504,31 +1465,26 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
-
-            this->skipSpaces();
+            
+            res += parsedSize;
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            
         } while (false);
 
         if (!isParsed) {
-            return NULL;
+            this->stream->setPos(initialPos);
+            return 0;
         }
 
         return res;
     }
 
-    GdlNode* parseNumber()
+    size_t parseNumber()
     {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+        size_t res = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -1547,20 +1503,17 @@ public:
             break;
         };
 
-        if (res == NULL) {   
-            this->stream->setPos(initialPos);
-        }
-
         return res;
     }
 
-    GdlNode* statement1Number()
+    size_t statement1Number()
     {
-        GdlNode* res = NULL;
+        size_t res = 0;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Number;
         
-        GdlNode* parsedElement = NULL;
+        size_t parsedElement = 0;
         char* streamData = NULL;
         size_t parsedSize = 0;
         bool cut = false;  // TODO
@@ -1578,68 +1531,59 @@ public:
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseString("-", 1);
             if (! (parsedSize == 0)) {
-                if (res == NULL) res = new GdlNode(ruleName);
-                parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
+                
+                res += parsedSize;
             }
-
-            this->skipSpaces();
 
             // ------------------------------------------------
 
-            parsedElement = this->parseInt();
-            if (parsedElement == NULL) {
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->parseInt();
+            if (parsedSize == 0) {
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
-            res->addToList(parsedElement);
-
-            this->skipSpaces();
+            
+            res += parsedSize;
 
             // ------------------------------------------------
 
-            last = res->getListValue().end();
+            parsedSize = res;
             isInlineParsed = this->parseInline1_Number_1(res);
             if (isInlineParsed == false) {
-                res->getListValue().erase(last, res->getListValue().end());
+                res = parsedSize;
             }
             if (! (isInlineParsed == false)) {
-                if (res == NULL) res = new GdlNode(ruleName);
+                
                 
             }
 
-            this->skipSpaces();
-
             // ------------------------------------------------
 
-            parsedElement = this->parseExp();
-            if (! (parsedElement == NULL)) {
-                if (res == NULL) res = new GdlNode(ruleName);
-                res->addToList(parsedElement);
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->parseExp();
+            if (! (parsedSize == 0)) {
+                
+                res += parsedSize;
             }
-
-            this->skipSpaces();
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            
         } while (false);
 
         if (!isParsed) {
-            return NULL;
+            this->stream->setPos(initialPos);
+            return 0;
         }
 
         return res;
     }
 
-    bool parseInline1_Number_1(GdlNode*& res)
+    bool parseInline1_Number_1(size_t& res)
     {
         bool isParsed = false;
-        size_t initialPos = this->stream->getPos();
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -1648,18 +1592,16 @@ public:
             break;
         };
 
-        if (isParsed == false) {   
-            this->stream->setPos(initialPos);
-        }
-
         return isParsed;
     }
 
-    bool statement1Inline1_Number_1(GdlNode*& res)
+    bool statement1Inline1_Number_1(size_t& res)
     {
+        size_t initialPos = this->stream->getPos();
+    
         auto ruleName = TokenName::Number;
         
-        GdlNode* parsedElement = NULL;
+        size_t parsedElement = 0;
         char* streamData = NULL;
         size_t parsedSize = 0;
         bool cut = false;  // TODO
@@ -1680,51 +1622,43 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
-
-            this->skipSpaces();
+            
+            res += parsedSize;
 
             // ------------------------------------------------
 
             parsedCount = 0;
             while (true) {
-                initialElementPos = this->stream->getPos();
-                
                 streamData = this->stream->getCurrentDataPtr(); 
                 parsedSize = this->systemParseRegexp("09", 2);
                 if (parsedSize == 0) {
-                    this->stream->setPos(initialElementPos);
                     break;
                 }
 
-                if (res == NULL) res = new GdlNode(ruleName);
-                parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
+                
+                res += parsedSize;
             }
             if (parsedCount == 0) {
                 // TODO: cut
                 break;
             }
 
-            this->skipSpaces();
-
             // ------------------------------------------------
 
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            
         } while (false);
         
+        if (!isParsed) {
+            this->stream->setPos(initialPos);
+        }
+
         return isParsed;
     }
 
-    GdlNode* parseInt()
+    size_t parseInt()
     {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+        size_t res = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -1745,20 +1679,17 @@ public:
             break;
         };
 
-        if (res == NULL) {   
-            this->stream->setPos(initialPos);
-        }
-
         return res;
     }
 
-    GdlNode* statement1Int()
+    size_t statement1Int()
     {
-        GdlNode* res = NULL;
+        size_t res = 0;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Int;
         
-        GdlNode* parsedElement = NULL;
+        size_t parsedElement = 0;
         char* streamData = NULL;
         size_t parsedSize = 0;
         bool cut = false;  // TODO
@@ -1779,34 +1710,31 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
-
-            this->skipSpaces();
+            
+            res += parsedSize;
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            
         } while (false);
 
         if (!isParsed) {
-            return NULL;
+            this->stream->setPos(initialPos);
+            return 0;
         }
 
         return res;
     }
 
-    GdlNode* statement2Int()
+    size_t statement2Int()
     {
-        GdlNode* res = NULL;
+        size_t res = 0;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Int;
         
-        GdlNode* parsedElement = NULL;
+        size_t parsedElement = 0;
         char* streamData = NULL;
         size_t parsedSize = 0;
         bool cut = false;  // TODO
@@ -1827,50 +1755,39 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
-
-            this->skipSpaces();
+            
+            res += parsedSize;
 
             // ------------------------------------------------
 
             while (true) {
-                initialElementPos = this->stream->getPos();
-
                 streamData = this->stream->getCurrentDataPtr(); 
                 parsedSize = this->systemParseRegexp("09", 2);
                 if (parsedSize == 0) {
-                    this->stream->setPos(initialElementPos);
                     break;
                 }
 
-                if (res == NULL) res = new GdlNode(ruleName);
-                parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
+                
+                res += parsedSize;
             }
-
-            this->skipSpaces();
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            
         } while (false);
 
         if (!isParsed) {
-            return NULL;
+            this->stream->setPos(initialPos);
+            return 0;
         }
 
         return res;
     }
 
-    GdlNode* parseExp()
+    size_t parseExp()
     {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+        size_t res = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -1880,20 +1797,17 @@ public:
             break;
         };
 
-        if (res == NULL) {   
-            this->stream->setPos(initialPos);
-        }
-
         return res;
     }
 
-    GdlNode* statement1Exp()
+    size_t statement1Exp()
     {
-        GdlNode* res = NULL;
+        size_t res = 0;
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::Exp;
         
-        GdlNode* parsedElement = NULL;
+        size_t parsedElement = 0;
         char* streamData = NULL;
         size_t parsedSize = 0;
         bool cut = false;  // TODO
@@ -1914,46 +1828,38 @@ public:
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
-            parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
-
-            this->skipSpaces();
+            
+            res += parsedSize;
 
             // ------------------------------------------------
 
             streamData = this->stream->getCurrentDataPtr(); 
             parsedSize = this->systemParseRegexp("++--", 4);
             if (! (parsedSize == 0)) {
-                if (res == NULL) res = new GdlNode(ruleName);
-                parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
+                
+                res += parsedSize;
             }
-
-            this->skipSpaces();
 
             // ------------------------------------------------
 
-            parsedElement = this->parseInt();
-            if (parsedElement == NULL) {
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->parseInt();
+            if (parsedSize == 0) {
                 // TODO: cut
                 break;
             }
-            if (res == NULL) res = new GdlNode(ruleName);
-            res->addToList(parsedElement);
-
-            this->skipSpaces();
+            
+            res += parsedSize;
 
             // ------------------------------------------------
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            
         } while (false);
 
         if (!isParsed) {
-            return NULL;
+            this->stream->setPos(initialPos);
+            return 0;
         }
 
         return res;

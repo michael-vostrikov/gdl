@@ -27,7 +27,7 @@ Value(S)
    | 'null'
    ;
 
-String(S)
+String(L)
    : '"'! SafeCodePoint*>> '"'
    ;
 
@@ -43,20 +43,20 @@ Hex
    ;
 */
 
-SafeCodePoint
+SafeCodePoint(L)
    : [\x20-\xFF]
    ;
 
 
-Number
+Number(L)
    : '-'? Int ('.' [0-9]+)? Exp?
    ;
 
 
-Int
+Int(L)
    : '0' | [1-9] [0-9]*
    ;
 
-Exp
+Exp(L)
    : [Ee] [+\-]? Int
    ;

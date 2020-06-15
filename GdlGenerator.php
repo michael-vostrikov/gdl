@@ -9,7 +9,7 @@ use Exception;
  */
 class GdlGenerator
 {
-    /** @var GdlNode */
+    /** @var GdlNode[] */
     protected $ruleMap;
 
     /** @var string */
@@ -131,8 +131,6 @@ public:
 SRC;
     }
 
-    // TODO: Flags: KeepSpaces, Lexeme, KeepTerminals
-
     public function generateClassBody()
     {
         $content = '';
@@ -178,6 +176,23 @@ SRC;
 
     protected $currentRuleName;
 
+    public function generarateRuleParams($ruleName)
+    {
+        $ruleFlags = $this->ruleMap[$ruleName]->get('Flags');
+        $isLexeme = ($ruleFlags !== null && $ruleFlags->get('Lexeme') !== null);
+
+        $resultType = 'GdlNode*';
+        $emptyValue = 'NULL';
+        $initCode = 'if (res == NULL) res = new GdlNode(ruleName);';
+        if ($isLexeme) {
+            $resultType = 'size_t';
+            $emptyValue = '0';
+            $initCode = '';
+        }
+
+        return [$resultType, $emptyValue, $initCode, $isLexeme];
+    }
+
     public function generateRuleMethod(GdlNode $rule)
     {
         $ruleName = $this->getRuleName($rule);
@@ -186,22 +201,19 @@ SRC;
         $ruleMethodName = $this->generateRuleMethodName($ruleName);
         $statementSwitch = trim($this->generateStatementSwitch($rule, $ruleName, false));
 
+        list($resultType, $emptyValue, $initCode) = $this->generarateRuleParams($this->currentRuleName);
+
         $content = <<<SRC
 
 
-    GdlNode* {$ruleMethodName}()
+    {$resultType} {$ruleMethodName}()
     {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+        {$resultType} res = {$emptyValue};
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
             {$statementSwitch}
         };
-
-        if (res == NULL) {   
-            this->stream->setPos(initialPos);
-        }
 
         return res;
     }
@@ -214,13 +226,14 @@ SRC;
             $content .= <<<SRC
 
 
-    GdlNode* {$statementMethodName}()
+    {$resultType} {$statementMethodName}()
     {
-        GdlNode* res = NULL;
+        {$resultType} res = {$emptyValue};
+        size_t initialPos = this->stream->getPos();
 
         auto ruleName = TokenName::{$this->currentRuleName};
         
-        GdlNode* parsedElement = NULL;
+        {$resultType} parsedElement = {$emptyValue};
         char* streamData = NULL;
         size_t parsedSize = 0;
         bool cut = false;  // TODO
@@ -238,13 +251,12 @@ SRC;
             {$statementMethodBody}
             
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            {$initCode}
         } while (false);
 
         if (!isParsed) {
-            return NULL;
+            this->stream->setPos(initialPos);
+            return {$emptyValue};
         }
 
         return res;
@@ -277,22 +289,19 @@ SRC;
         $ruleMethodName = $this->generateRuleMethodName($ruleName);
         $statementSwitch = trim($this->generateStatementSwitch($rule, $ruleName, true));
 
+        list($resultType, $emptyValue, $initCode) = $this->generarateRuleParams($this->currentRuleName);
+
         $content = <<<SRC
 
 
-    bool {$ruleMethodName}(GdlNode*& res)
+    bool {$ruleMethodName}({$resultType}& res)
     {
         bool isParsed = false;
-        size_t initialPos = this->stream->getPos();
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
             {$statementSwitch}
         };
-
-        if (isParsed == false) {   
-            this->stream->setPos(initialPos);
-        }
 
         return isParsed;
     }
@@ -305,11 +314,13 @@ SRC;
             $content .= <<<SRC
 
 
-    bool {$statementMethodName}(GdlNode*& res)
+    bool {$statementMethodName}({$resultType}& res)
     {
+        size_t initialPos = this->stream->getPos();
+    
         auto ruleName = TokenName::{$this->currentRuleName};
         
-        GdlNode* parsedElement = NULL;
+        {$resultType} parsedElement = {$emptyValue};
         char* streamData = NULL;
         size_t parsedSize = 0;
         bool cut = false;  // TODO
@@ -327,11 +338,13 @@ SRC;
             {$statementMethodBody}
 
             isParsed = true;
-            if (res == NULL) {
-                res = new GdlNode(ruleName);
-            }
+            {$initCode}
         } while (false);
         
+        if (!isParsed) {
+            this->stream->setPos(initialPos);
+        }
+
         return isParsed;
     }
 SRC;
@@ -470,6 +483,7 @@ SRC;
     public function generateStatementSwitchBranch(array $sameIndexesChars, array $statementIndexList, string $ruleName, $isInline)
     {
         $content = '';
+        list($resultType, $emptyValue, $initCode) = $this->generarateRuleParams($this->currentRuleName);
 
         foreach ($sameIndexesChars as $char) {
             $char = $this->generateSymbolStr($char, 1);
@@ -486,7 +500,7 @@ SRC;
                 res = this->{$statementMethodName}();";
                 } else {
                     $content .= "
-                if (res == NULL) res = this->{$statementMethodName}();";
+                if (res == {$emptyValue}) res = this->{$statementMethodName}();";
                 }
             }
             else {
@@ -569,16 +583,17 @@ SRC;
 
         $element = $expression->get('Element');
 
-        list($elementCode, $breakCondition, $addElementStr) = $this->generateElementCode($ruleName, $element, $inlineRuleIndex, $statementIndex);
-
-        $createResultStr = 'if (res == NULL) res = new GdlNode(ruleName);';
-
+        list($elementCode, $breakCondition, $addElementStr, $createResultStr) = $this->generateElementCode($ruleName, $element, $inlineRuleIndex, $statementIndex);
 
         if ($lookAheadElement !== null) {
             list($lookAheadElementCode, $lookAheadBreakCondition) = $this->generateElementCode($ruleName, $lookAheadElement, $inlineRuleIndex, $statementIndex);
 
+            $initialPosCode = 'initialElementPos = this->stream->getPos();';
+
             $lookAheadElementCode = trim($lookAheadElementCode);
             $elementCode = "
+            {$initialPosCode}
+
             {$lookAheadElementCode}
             if (! ({$lookAheadBreakCondition})) {
                 this->stream->setPos(initialElementPos);
@@ -614,14 +629,10 @@ SRC;
         else if ($quantifierType === '*') {
             $elementCode = str_replace("\n", "\n    ", $elementCode);
 
-            // TODO: remove setPos()
             $content = "
             while (true) {
-                initialElementPos = this->stream->getPos();
-
                 {$elementCode}
                 if ({$breakCondition}) {
-                    this->stream->setPos(initialElementPos);
                     break;
                 }
 
@@ -637,11 +648,8 @@ SRC;
             $content = "
             parsedCount = 0;
             while (true) {
-                initialElementPos = this->stream->getPos();
-                
                 {$elementCode}
                 if ({$breakCondition}) {
-                    this->stream->setPos(initialElementPos);
                     break;
                 }
 
@@ -671,31 +679,73 @@ SRC;
         $elementCode = '';
         $breakCondition = '';
         $addElementStr = '';
+        $createResultStr = '';
+
+        list(,,, $currentIsLexeme) = $this->generarateRuleParams($this->currentRuleName);
+
+        if (!$currentIsLexeme && $elementType !== 'InlineRule') {
+            $createResultStr = 'if (res == NULL) res = new GdlNode(ruleName);';
+        }
+        else {
+            $createResultStr = '';
+        }
 
         if ($elementType === 'RuleName') {
             $innerRuleName = $specificElement->getValue();
             $ruleMethodName = $this->generateRuleMethodName($innerRuleName);
 
-            $elementCode = "parsedElement = this->{$ruleMethodName}();";
+            list($resultType, $emptyValue, $initCode, $isLexeme) = $this->generarateRuleParams($innerRuleName);
 
-            $breakCondition = "parsedElement == NULL";
+            if (!$isLexeme) {
+                $elementCode = "parsedElement = this->{$ruleMethodName}();";
+                $breakCondition = "parsedElement == {$emptyValue}";
+                $addElementStr = "res->addToList(parsedElement);";
+            }
+            else {
+                $elementCode = "
+            streamData = this->stream->getCurrentDataPtr(); 
+            parsedSize = this->{$ruleMethodName}();
+            ";
 
-            $addElementStr = "res->addToList(parsedElement);";
+                $breakCondition = "parsedSize == {$emptyValue}";
+
+                if (!$currentIsLexeme) {
+                    $addElementStr = "
+            parsedElement = new GdlNode({$innerRuleName}, StringDescriptor(streamData, parsedSize));
+            res->addToList(parsedElement);
+            ";
+                }
+                else {
+                    $addElementStr = '
+            res += parsedSize;
+            ';
+                }
+            }
         }
         elseif ($elementType === 'InlineRule') {
             $innerRuleName = $this->generateInlineRuleName($ruleName . '_' . ($statementIndex + 1), $inlineRuleIndex);
             $ruleMethodName = $this->generateRuleMethodName($innerRuleName);
 
-            $elementCode = "
+            if (!$currentIsLexeme) {
+                $elementCode = "
             last = res->getListValue().end();
             isInlineParsed = this->{$ruleMethodName}(res);
             if (isInlineParsed == false) {
                 res->getListValue().erase(last, res->getListValue().end());
             }
             ";
+            }
+            else {
+                $elementCode = "
+            parsedSize = res;
+            isInlineParsed = this->{$ruleMethodName}(res);
+            if (isInlineParsed == false) {
+                res = parsedSize;
+            }
+            ";
+            }
 
             $breakCondition = "isInlineParsed == false";
-
             $addElementStr = "";
         }
         elseif ($elementType === 'StringLiteral') {
@@ -710,10 +760,17 @@ SRC;
 
             $breakCondition = "parsedSize == 0";
 
-            $addElementStr = '
+            if (!$currentIsLexeme) {
+                $addElementStr = '
             parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
             ';
+            }
+            else {
+                $addElementStr = '
+            res += parsedSize;
+            ';
+            }
         }
         elseif ($elementType === 'RegexpLiteral') {
             // TODO: keep terminals flag
@@ -727,10 +784,17 @@ SRC;
 
             $breakCondition = "parsedSize == 0";
 
-            $addElementStr = '
+            if (!$currentIsLexeme) {
+                $addElementStr = '
             parsedElement = new GdlNode(0, StringDescriptor(streamData, parsedSize));
             res->addToList(parsedElement);
             ';
+            }
+            else {
+                $addElementStr = '
+            res += parsedSize;
+            ';
+            }
         }
 
         $elementCode = trim($elementCode);
@@ -739,7 +803,7 @@ SRC;
 
         if ($isInlineRule) $inlineRuleIndex++;
 
-        return [$elementCode, $breakCondition, $addElementStr];
+        return [$elementCode, $breakCondition, $addElementStr, $createResultStr];
     }
 
     public function generateSymbolStr(string $char, $quotesMode)

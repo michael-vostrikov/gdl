@@ -133,7 +133,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -194,7 +193,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -228,11 +226,7 @@ public:
             // ------------------------------------------------
 
             while (true) {
-                last = res->getListValue().end();
                 isInlineParsed = this->parseInline1_Obj_1(res);
-                if (isInlineParsed == false) {
-                    res->getListValue().erase(last, res->getListValue().end());
-                }
                 if (isInlineParsed == false) {
                     break;
                 }
@@ -285,6 +279,12 @@ public:
 
     bool statement1Inline1_Obj_1(GdlNode*& res)
     {
+        
+        GdlNode* initialRes = res;
+        std::vector<GdlNode*>::iterator last;
+        if (res != NULL) last = res->getListValue().end() - 1;
+            
+
         size_t initialPos = this->stream->getPos();
     
         auto ruleName = RuleName::Obj;
@@ -297,7 +297,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -331,11 +330,19 @@ public:
             // ------------------------------------------------
 
             isParsed = true;
-            if (res == NULL) res = new GdlNode(ruleName);
+            
+        GdlNode* initialRes = res;
+        std::vector<GdlNode*>::iterator last;
+        if (res != NULL) last = res->getListValue().end() - 1;
+            
         } while (false);
         
         if (!isParsed) {
             this->stream->setPos(initialPos);
+            
+        if (res != NULL && initialRes != NULL) res->getListValue().erase(last + 1, res->getListValue().end());
+        res = initialRes;
+            
         }
 
         return isParsed;
@@ -356,7 +363,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -430,7 +436,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -518,7 +523,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -539,11 +543,7 @@ public:
 
             // ------------------------------------------------
 
-            last = res->getListValue().end();
             isInlineParsed = this->parseInline1_Arr_1(res);
-            if (isInlineParsed == false) {
-                res->getListValue().erase(last, res->getListValue().end());
-            }
             if (! (isInlineParsed == false)) {
                 
                 
@@ -609,6 +609,12 @@ public:
 
     bool statement1Inline1_Arr_1(GdlNode*& res)
     {
+        
+        GdlNode* initialRes = res;
+        std::vector<GdlNode*>::iterator last;
+        if (res != NULL) last = res->getListValue().end() - 1;
+            
+
         size_t initialPos = this->stream->getPos();
     
         auto ruleName = RuleName::Arr;
@@ -621,7 +627,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -643,11 +648,7 @@ public:
             // ------------------------------------------------
 
             while (true) {
-                last = res->getListValue().end();
                 isInlineParsed = this->parseInline1_Inline1_Arr_1_1(res);
-                if (isInlineParsed == false) {
-                    res->getListValue().erase(last, res->getListValue().end());
-                }
                 if (isInlineParsed == false) {
                     break;
                 }
@@ -661,11 +662,19 @@ public:
             // ------------------------------------------------
 
             isParsed = true;
-            if (res == NULL) res = new GdlNode(ruleName);
+            
+        GdlNode* initialRes = res;
+        std::vector<GdlNode*>::iterator last;
+        if (res != NULL) last = res->getListValue().end() - 1;
+            
         } while (false);
         
         if (!isParsed) {
             this->stream->setPos(initialPos);
+            
+        if (res != NULL && initialRes != NULL) res->getListValue().erase(last + 1, res->getListValue().end());
+        res = initialRes;
+            
         }
 
         return isParsed;
@@ -687,6 +696,12 @@ public:
 
     bool statement1Inline1_Inline1_Arr_1_1(GdlNode*& res)
     {
+        
+        GdlNode* initialRes = res;
+        std::vector<GdlNode*>::iterator last;
+        if (res != NULL) last = res->getListValue().end() - 1;
+            
+
         size_t initialPos = this->stream->getPos();
     
         auto ruleName = RuleName::Arr;
@@ -699,7 +714,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -733,11 +747,19 @@ public:
             // ------------------------------------------------
 
             isParsed = true;
-            if (res == NULL) res = new GdlNode(ruleName);
+            
+        GdlNode* initialRes = res;
+        std::vector<GdlNode*>::iterator last;
+        if (res != NULL) last = res->getListValue().end() - 1;
+            
         } while (false);
         
         if (!isParsed) {
             this->stream->setPos(initialPos);
+            
+        if (res != NULL && initialRes != NULL) res->getListValue().erase(last + 1, res->getListValue().end());
+        res = initialRes;
+            
         }
 
         return isParsed;
@@ -806,7 +828,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -852,7 +873,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -900,7 +920,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -948,7 +967,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -994,7 +1012,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -1040,7 +1057,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -1086,7 +1102,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -1146,7 +1161,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -1176,11 +1190,7 @@ public:
                     break;
                 }
     
-                parsedSize = res;
                 isInlineParsed = this->parseInline1_String_1(res);
-                if (isInlineParsed == false) {
-                    res = parsedSize;
-                }
                 if (isInlineParsed == false) {
                     break;
                 }
@@ -1457,6 +1467,10 @@ public:
 
     bool statement1Inline1_String_1(size_t& res)
     {
+        
+        size_t initialRes = res;
+            
+
         size_t initialPos = this->stream->getPos();
     
         auto ruleName = RuleName::String;
@@ -1469,7 +1483,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -1491,10 +1504,15 @@ public:
 
             isParsed = true;
             
+        size_t initialRes = res;
+            
         } while (false);
         
         if (!isParsed) {
             this->stream->setPos(initialPos);
+            
+        res = initialRes;
+            
         }
 
         return isParsed;
@@ -1502,6 +1520,10 @@ public:
 
     bool statement2Inline1_String_1(size_t& res)
     {
+        
+        size_t initialRes = res;
+            
+
         size_t initialPos = this->stream->getPos();
     
         auto ruleName = RuleName::String;
@@ -1514,7 +1536,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -1536,10 +1557,15 @@ public:
 
             isParsed = true;
             
+        size_t initialRes = res;
+            
         } while (false);
         
         if (!isParsed) {
             this->stream->setPos(initialPos);
+            
+        res = initialRes;
+            
         }
 
         return isParsed;
@@ -1574,7 +1600,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -1594,11 +1619,7 @@ public:
 
             // ------------------------------------------------
 
-            parsedSize = res;
             isInlineParsed = this->parseInline1_Esc_1(res);
-            if (isInlineParsed == false) {
-                res = parsedSize;
-            }
             if (isInlineParsed == false) {
                 // TODO: cut
                 break;
@@ -1645,6 +1666,10 @@ public:
 
     bool statement1Inline1_Esc_1(size_t& res)
     {
+        
+        size_t initialRes = res;
+            
+
         size_t initialPos = this->stream->getPos();
     
         auto ruleName = RuleName::Esc;
@@ -1657,7 +1682,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -1679,10 +1703,15 @@ public:
 
             isParsed = true;
             
+        size_t initialRes = res;
+            
         } while (false);
         
         if (!isParsed) {
             this->stream->setPos(initialPos);
+            
+        res = initialRes;
+            
         }
 
         return isParsed;
@@ -1690,6 +1719,10 @@ public:
 
     bool statement2Inline1_Esc_1(size_t& res)
     {
+        
+        size_t initialRes = res;
+            
+
         size_t initialPos = this->stream->getPos();
     
         auto ruleName = RuleName::Esc;
@@ -1702,7 +1735,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -1724,10 +1756,15 @@ public:
 
             isParsed = true;
             
+        size_t initialRes = res;
+            
         } while (false);
         
         if (!isParsed) {
             this->stream->setPos(initialPos);
+            
+        res = initialRes;
+            
         }
 
         return isParsed;
@@ -1762,7 +1799,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -1888,7 +1924,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -2172,7 +2207,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -2243,7 +2277,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -2272,11 +2305,7 @@ public:
 
             // ------------------------------------------------
 
-            parsedSize = res;
             isInlineParsed = this->parseInline1_Number_1(res);
-            if (isInlineParsed == false) {
-                res = parsedSize;
-            }
             if (! (isInlineParsed == false)) {
                 
                 
@@ -2321,6 +2350,10 @@ public:
 
     bool statement1Inline1_Number_1(size_t& res)
     {
+        
+        size_t initialRes = res;
+            
+
         size_t initialPos = this->stream->getPos();
     
         auto ruleName = RuleName::Number;
@@ -2333,7 +2366,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -2355,6 +2387,7 @@ public:
 
             parsedCount = 0;
             outerParsedSize = res;
+            
             while (true) {
                 streamData = this->stream->getCurrentDataPtr(); 
                 parsedSize = this->systemParseRegexp("09", 2);
@@ -2377,10 +2410,15 @@ public:
 
             isParsed = true;
             
+        size_t initialRes = res;
+            
         } while (false);
         
         if (!isParsed) {
             this->stream->setPos(initialPos);
+            
+        res = initialRes;
+            
         }
 
         return isParsed;
@@ -2427,7 +2465,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -2474,7 +2511,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -2549,7 +2585,6 @@ public:
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;

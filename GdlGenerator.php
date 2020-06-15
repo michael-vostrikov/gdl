@@ -267,7 +267,6 @@ SRC;
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -317,7 +316,7 @@ SRC;
         $ruleMethodName = $this->generateRuleMethodName($ruleName);
         $statementSwitch = trim($this->generateStatementSwitch($rule, $ruleName, true));
 
-        list($resultType, $emptyValue, $initCode) = $this->generarateRuleParams($this->currentRuleName);
+        list($resultType, $emptyValue, $initCode, $isLexeme) = $this->generarateRuleParams($this->currentRuleName);
 
         $content = <<<SRC
 
@@ -335,6 +334,28 @@ SRC;
     }
 SRC;
 
+        $initCode = "
+        ";
+        $deleteCode = '';
+        if (!$isLexeme) {
+            $initCode = "
+        {$resultType} initialRes = res;
+        std::vector<GdlNode*>::iterator last;
+        if (res != NULL) last = res->getListValue().end() - 1;
+            ";
+            $deleteCode = "
+        if (res != NULL && initialRes != NULL) res->getListValue().erase(last + 1, res->getListValue().end());
+        res = initialRes;
+            ";
+        }
+        else {
+            $initCode = "
+        {$resultType} initialRes = res;
+            ";
+        $deleteCode = "
+        res = initialRes;
+            ";
+        }
         foreach ($rule->get('RuleBody')->getArray('Statement') as $statementIndex => $statement) {
             $statementMethodName = $this->generateStatementMethodName($ruleName, $statementIndex);
             $statementMethodBody = trim($this->generateStatementMethodBody($ruleName, $statementIndex, $statement));
@@ -344,6 +365,8 @@ SRC;
 
     bool {$statementMethodName}({$resultType}& res)
     {
+        {$initCode}
+
         size_t initialPos = this->stream->getPos();
     
         auto ruleName = RuleName::{$this->currentRuleName};
@@ -356,7 +379,6 @@ SRC;
         size_t initialElementPos = 0;
         size_t parsedCount = 0;
         
-        std::vector<GdlNode*>::iterator last;
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
@@ -373,6 +395,7 @@ SRC;
         
         if (!isParsed) {
             this->stream->setPos(initialPos);
+            {$deleteCode}
         }
 
         return isParsed;
@@ -692,7 +715,10 @@ SRC;
 
             $content = "
             parsedCount = 0;
-            " . (!$currentIsLexeme ? "outerLast = res->getListValue().end();" : "outerParsedSize = res;") . "
+            "
+            . (!$currentIsLexeme ? "if (res == NULL) res = new GdlNode(ruleName);\n            " : "")
+            . (!$currentIsLexeme ? "outerLast = res->getListValue().end();" : "outerParsedSize = res;\n            ")
+            . "
             while (true) {
                 {$elementCode}
                 if ({$breakCondition}) {
@@ -716,8 +742,10 @@ SRC;
             list(,,, $currentIsLexeme) = $this->generarateRuleParams($this->currentRuleName);
 
             $content = "
-            parsedCount = 0;
-            " . (!$currentIsLexeme ? "outerLast = res->getListValue().end();" : "outerParsedSize = res;") . "
+            "
+            . (!$currentIsLexeme ? "if (res == NULL) res = new GdlNode(ruleName);\n            " : "")
+            . (!$currentIsLexeme ? "outerLast = res->getListValue().end();" : "outerParsedSize = res;\n            ")
+            . "
             countVal = {$countVal};
             while (parsedCount < countVal) {
                 {$elementCode}
@@ -805,20 +833,12 @@ SRC;
 
             if (!$currentIsLexeme) {
                 $elementCode = "
-            last = res->getListValue().end();
             isInlineParsed = this->{$ruleMethodName}(res);
-            if (isInlineParsed == false) {
-                res->getListValue().erase(last, res->getListValue().end());
-            }
             ";
             }
             else {
                 $elementCode = "
-            parsedSize = res;
             isInlineParsed = this->{$ruleMethodName}(res);
-            if (isInlineParsed == false) {
-                res = parsedSize;
-            }
             ";
             }
 

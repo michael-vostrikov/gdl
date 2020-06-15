@@ -16,14 +16,14 @@ comment(-L):
 ;
 
 Rule:
-    RuleName={str}! Flags? delimiter* ':' delimiter* RuleBody ';' delimiter*
+    RuleName! Flags? delimiter* ':' delimiter* RuleBody ';' delimiter*
 ;
 
-RuleName:
+RuleName(L):
     ID
 ;
 
-ID:
+ID(L):
     [a-zA-Z_] [a-zA-Z_0-9]*
 ;
 
@@ -56,7 +56,7 @@ Expression:
 ;
 
 Element:
-    | RuleName={str}
+    | RuleName
     | StringLiteral
     | RegexpLiteral
     | InlineRule
@@ -70,19 +70,19 @@ Quantifier:
 ;
 
 Count:
-    | IntValue={str}
+    | IntValue
     | FunctionCall
 ;
 
-IntValue:
+IntValue(L):
     [0-9]+
 ;
 
 FunctionCall:
-    '={'! FunctionName={str} (',' FunctionName={str})* '}'
+    '={'! FunctionName (',' FunctionName)* '}'
 ;
 
-FunctionName:
+FunctionName(L):
     ID
 ;
 
@@ -91,7 +91,7 @@ LookAhead:
     | '>' Element
 ;
 
-Cut:
+Cut(L):
     '!'
 ;
 
@@ -122,7 +122,7 @@ HexCodeSymbol:
     '\\x'! HexDigit HexDigit
 ;
 
-HexDigit:
+HexDigit(L):
     [0-9A-F]
 ;
 

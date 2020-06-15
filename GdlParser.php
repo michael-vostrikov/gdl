@@ -201,7 +201,7 @@ class GdlParser
         if ($quantifier !== null) {
             $count = $quantifier->get('Count');
             if ($count === null) {
-                $quantifierType = $quantifier->get('')->getValue();
+                $quantifierType = $quantifier->getFirst()->getValue();
             }
             else {
                 $quantifierType = '{}';
@@ -252,7 +252,7 @@ class GdlParser
             }
         }
 
-        $countDoesNotMatch = (($quantifierType === null || $quantifierType === '+') ? empty($parsedElementList)
+        $countDoesNotMatch = (($quantifierType === null || $quantifierType === '+') ? count($parsedElementList) === 0
             : (($quantifierType === '{}') ? count($parsedElementList) !== $countVal : false)
         );
         if ($countDoesNotMatch) {
@@ -284,7 +284,7 @@ class GdlParser
             throw new Exception('Unknown element type: ' . $elementType);
         }
 
-        if (is_string($parsedElement) && $this->lexemeLevel == 0) {
+        if (is_string($parsedElement) && $this->lexemeLevel === 0) {
             return new GdlNode('', $parsedElement);
         }
 
@@ -381,8 +381,8 @@ class GdlParser
         }
         elseif ($elementType === 'HexCodeSymbol') {
             list($hexDigit1, $hexDigit2) = $specificElement->getArray('HexDigit');
-            $intValue1 = ord($hexDigit1->get('')->getValue()) - 0x30;
-            $intValue2 = ord($hexDigit2->get('')->getValue()) - 0x30;
+            $intValue1 = ord($hexDigit1->getValue()) - 0x30;
+            $intValue2 = ord($hexDigit2->getValue()) - 0x30;
             $intValue1 -= ($intValue1 >= 0x0A ? 0x07 : 0);
             $intValue2 -= ($intValue2 >= 0x0A ? 0x07 : 0);
             $code = $intValue1 * 0x10 + $intValue2;

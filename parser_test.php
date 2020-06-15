@@ -153,6 +153,7 @@ class GdlParserTestApp
         $stream->reset();
         $parser2 = new GdlParser($grammar1);
         $t1 = microtime(1);
+        $GLOBALS['test'] = 1;
         $grammar2 = $parser2->parse($mainRuleName, $stream);
         $t2 = microtime(1);
         echo ($t2 - $t1) . "\n";

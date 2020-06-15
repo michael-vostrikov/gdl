@@ -115,7 +115,6 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RuleName', 'RuleName'],
                     ]],
-                    ['FunctionCall', [['FunctionName', 'str']]],
                     ['Cut', '!'],
                 ]],
                 ['Expression', [
@@ -166,6 +165,9 @@ $selfGrammar = ['Grammar', [
     ]],
     ['Rule', [
         ['RuleName', 'RuleName'],
+        ['Flags', [
+            ['Lexeme', 'L'],
+        ]],
         ['RuleBody', [
             ['Statement', [
                 ['Expression', [
@@ -178,6 +180,9 @@ $selfGrammar = ['Grammar', [
     ]],
     ['Rule', [
         ['RuleName', 'ID'],
+        ['Flags', [
+            ['Lexeme', 'L'],
+        ]],
         ['RuleBody', [
             ['Statement', [
                 ['Expression', [
@@ -441,7 +446,6 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RuleName', 'RuleName'],
                     ]],
-                    ['FunctionCall', [['FunctionName', 'str']]],
                 ]],
             ]],
             ['Statement', [
@@ -528,7 +532,6 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RuleName', 'IntValue'],
                     ]],
-                    ['FunctionCall', [['FunctionName', 'str']]],
                 ]],
             ]],
             ['Statement', [
@@ -542,6 +545,9 @@ $selfGrammar = ['Grammar', [
     ]],
     ['Rule', [
         ['RuleName', 'IntValue'],
+        ['Flags', [
+            ['Lexeme', 'L'],
+        ]],
         ['RuleBody', [
             ['Statement', [
                 ['Expression', [
@@ -575,7 +581,6 @@ $selfGrammar = ['Grammar', [
                     ['Element', [
                         ['RuleName', 'FunctionName'],
                     ]],
-                    ['FunctionCall', [['FunctionName', 'str']]],
                 ]],
                 ['Expression', [
                     ['Element', [
@@ -593,7 +598,6 @@ $selfGrammar = ['Grammar', [
                                         ['Element', [
                                             ['RuleName', 'FunctionName'],
                                         ]],
-                                        ['FunctionCall', [['FunctionName', 'str']]],
                                     ]],
                                 ]],
                             ]],
@@ -613,6 +617,9 @@ $selfGrammar = ['Grammar', [
     ]],
     ['Rule', [
         ['RuleName', 'FunctionName'],
+        ['Flags', [
+            ['Lexeme', 'L'],
+        ]],
         ['RuleBody', [
             ['Statement', [
                 ['Expression', [
@@ -654,6 +661,9 @@ $selfGrammar = ['Grammar', [
     ]],
     ['Rule', [
         ['RuleName', 'Cut'],
+        ['Flags', [
+            ['Lexeme', 'L'],
+        ]],
         ['RuleBody', [
             ['Statement', [
                 ['Expression', [
@@ -867,6 +877,9 @@ $selfGrammar = ['Grammar', [
     ]],
     ['Rule', [
         ['RuleName', 'HexDigit'],
+        ['Flags', [
+            ['Lexeme', 'L'],
+        ]],
         ['RuleBody', [
             ['Statement', [
                 ['Expression', [

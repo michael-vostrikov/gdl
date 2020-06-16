@@ -554,4 +554,20 @@ SRC;
         $generator = new GdlGenerator($languageGrammar, "Json");
         $generator->generateFile(__DIR__ . '/cpp/JsonParser.h');
     }
+
+    public function testPhpGenerator()
+    {
+        $mainRuleName = 'Grammar';
+        $gdlParser = new GdlParser($this->getSelfGrammar());
+
+        $grammarSource = file_get_contents(__DIR__ . '/php.gdl');
+        $stream = new Stream($grammarSource);
+
+        $languageGrammar = $gdlParser->parse($mainRuleName, $stream);
+        $this->assertEmpty($gdlParser->getErrors());
+        $this->assertTrue(!empty($languageGrammar));
+
+        $generator = new GdlGenerator($languageGrammar, "Php");
+        $generator->generateFile(__DIR__ . '/cpp/PhpParser.h');
+    }
 }

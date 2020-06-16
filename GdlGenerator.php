@@ -184,7 +184,7 @@ public:
             }
         }
     }
-    
+
     {$classBody}
     
     {$functionDeclarationsCode}
@@ -297,6 +297,9 @@ SRC;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+        
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -325,11 +328,33 @@ SRC;
                 $elementType = $specificElement->getName();
                 $isInlineRule = ($elementType === "InlineRule");
 
-                // TODO: check inline look-ahead
                 if ($isInlineRule) {
                     $innerRuleName = $this->generateInlineRuleName($ruleName . '_' . ($statementIndex + 1), $inlineRuleIndex);
                     $content .= $this->generateInlineRuleMethod($specificElement, $innerRuleName);
                     $inlineRuleIndex++;
+                }
+
+                $lookAheadElement = null;
+                $lookAhead = $expression->get('LookAhead');
+                if ($lookAhead !== null) {
+                    if ($lookAhead->get('Element') !== null) {
+                        $lookAheadElement = $lookAhead->get('Element');
+                    }
+                    elseif (isset($expressionList[$expressionIndex + 1])) {
+                        $lookAheadElement = $expressionList[$expressionIndex + 1]->get('Element');
+                    }
+                }
+
+                if ($lookAheadElement !== null) {
+                    $lookAheadSpecificElement = $lookAheadElement->getFirst();
+                    $lookAheadElementType = $lookAheadSpecificElement->getName();
+                    $isInlineRule = ($lookAheadElementType === "InlineRule");
+
+                    if ($isInlineRule) {
+                        $innerRuleName = $this->generateInlineRuleName($ruleName . '_' . ($statementIndex + 1), $inlineRuleIndex);
+                        $content .= $this->generateInlineRuleMethod($lookAheadSpecificElement, $innerRuleName);
+                        $inlineRuleIndex++;
+                    }
                 }
             }
         }
@@ -409,6 +434,9 @@ SRC;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -437,11 +465,33 @@ SRC;
                 $elementType = $specificElement->getName();
                 $isInlineRule = ($elementType === "InlineRule");
 
-                // TODO: check inline look-ahead
                 if ($isInlineRule) {
                     $innerRuleName = $this->generateInlineRuleName($ruleName . '_' . ($statementIndex + 1), $inlineRuleIndex);
                     $content .= $this->generateInlineRuleMethod($specificElement, $innerRuleName);
                     $inlineRuleIndex++;
+                }
+
+                $lookAheadElement = null;
+                $lookAhead = $expression->get('LookAhead');
+                if ($lookAhead !== null) {
+                    if ($lookAhead->get('Element') !== null) {
+                        $lookAheadElement = $lookAhead->get('Element');
+                    }
+                    elseif (isset($expressionList[$expressionIndex + 1])) {
+                        $lookAheadElement = $expressionList[$expressionIndex + 1]->get('Element');
+                    }
+                }
+
+                if ($lookAheadElement !== null) {
+                    $lookAheadSpecificElement = $lookAheadElement->getFirst();
+                    $lookAheadElementType = $lookAheadSpecificElement->getName();
+                    $isInlineRule = ($lookAheadElementType === "InlineRule");
+
+                    if ($isInlineRule) {
+                        $innerRuleName = $this->generateInlineRuleName($ruleName . '_' . ($statementIndex + 1), $inlineRuleIndex);
+                        $content .= $this->generateInlineRuleMethod($lookAheadSpecificElement, $innerRuleName);
+                        $inlineRuleIndex++;
+                    }
                 }
             }
         }
@@ -675,6 +725,8 @@ SRC;
             }
         }
 
+        list(,,, $currentIsLexeme) = $this->generarateRuleParams($this->currentRuleName);
+
         list($elementCode, $breakCondition, $addElementStr, $createResultStr) = $this->generateElementCode($ruleName, $element, $inlineRuleIndex, $statementIndex, $functionNameList);
 
 
@@ -682,15 +734,21 @@ SRC;
         if ($lookAheadElement !== null) {
             list($lookAheadElementCode, $lookAheadBreakCondition) = $this->generateElementCode($ruleName, $lookAheadElement, $inlineRuleIndex, $statementIndex);
 
-            $initialPosCode = 'initialElementPos = this->stream->getPos();';
-
             $lookAheadElementCode = trim($lookAheadElementCode);
             $elementCode = "
-            {$initialPosCode}
-
+            initialElementPos = this->stream->getPos();
+            "
+            . (!$currentIsLexeme ? "if (res == NULL) res = this->createGdlNode(ruleName);\n            " : "")
+            . (!$currentIsLexeme ? "lookAheadLast = res->getListValue().end();" : "lookAheadParsedSize = res;\n            ")
+            . "
+            
             {$lookAheadElementCode}
+            this->stream->setPos(initialElementPos);
+            "
+            . (!$currentIsLexeme ? "res->getListValue().erase(lookAheadLast, res->getListValue().end());" : "res = lookAheadParsedSize;")
+            . "
+            
             if (! ({$lookAheadBreakCondition})) {
-                this->stream->setPos(initialElementPos);
                 break;
             }
 
@@ -737,7 +795,6 @@ SRC;
         }
         else if ($quantifierType === '+') {
             $elementCode = str_replace("\n", "\n    ", $elementCode);
-            list(,,, $currentIsLexeme) = $this->generarateRuleParams($this->currentRuleName);
 
             $content = "
             parsedCount = 0;

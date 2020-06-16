@@ -111,7 +111,7 @@ public:
             }
         }
     }
-    
+
     
 
     GdlNode* parseJson()
@@ -162,6 +162,9 @@ public:
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
+        
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
         
         bool isInlineParsed = false;
 
@@ -222,6 +225,9 @@ public:
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
+        
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
         
         bool isInlineParsed = false;
 
@@ -327,6 +333,9 @@ public:
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -392,6 +401,9 @@ public:
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
+        
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
         
         bool isInlineParsed = false;
 
@@ -465,6 +477,9 @@ public:
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
+        
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
         
         bool isInlineParsed = false;
 
@@ -552,6 +567,9 @@ public:
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
+        
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
         
         bool isInlineParsed = false;
 
@@ -657,6 +675,9 @@ public:
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -744,6 +765,9 @@ public:
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -858,6 +882,9 @@ public:
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+        
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -902,6 +929,9 @@ public:
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
+        
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
         
         bool isInlineParsed = false;
 
@@ -950,6 +980,9 @@ public:
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+        
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -997,6 +1030,9 @@ public:
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+        
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -1041,6 +1077,9 @@ public:
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
+        
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
         
         bool isInlineParsed = false;
 
@@ -1087,6 +1126,9 @@ public:
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+        
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -1131,6 +1173,9 @@ public:
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
+        
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
         
         bool isInlineParsed = false;
 
@@ -1191,6 +1236,9 @@ public:
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+        
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -1208,11 +1256,15 @@ public:
 
             while (true) {
                 initialElementPos = this->stream->getPos();
-    
+                lookAheadParsedSize = res;
+                
+                
                 streamData = this->stream->getCurrentDataPtr(); 
                 parsedSize = this->systemParseString("\"", 1);
+                this->stream->setPos(initialElementPos);
+                res = lookAheadParsedSize;
+                
                 if (! (parsedSize == 0)) {
-                    this->stream->setPos(initialElementPos);
                     break;
                 }
     
@@ -1513,6 +1565,9 @@ public:
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -1566,6 +1621,9 @@ public:
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -1629,6 +1687,9 @@ public:
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
+        
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
         
         bool isInlineParsed = false;
 
@@ -1712,6 +1773,9 @@ public:
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -1765,6 +1829,9 @@ public:
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -1828,6 +1895,9 @@ public:
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
+        
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
         
         bool isInlineParsed = false;
 
@@ -1953,6 +2023,9 @@ public:
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
+        
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
         
         bool isInlineParsed = false;
 
@@ -2237,6 +2310,9 @@ public:
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+        
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -2306,6 +2382,9 @@ public:
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
+        
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
         
         bool isInlineParsed = false;
 
@@ -2396,6 +2475,9 @@ public:
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -2495,6 +2577,9 @@ public:
         size_t outerParsedSize = 0;
         size_t countVal = 0;
         
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
+        
         bool isInlineParsed = false;
 
         bool isParsed = false;
@@ -2540,6 +2625,9 @@ public:
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
+        
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
         
         bool isInlineParsed = false;
 
@@ -2614,6 +2702,9 @@ public:
         std::vector<GdlNode*>::iterator outerLast;
         size_t outerParsedSize = 0;
         size_t countVal = 0;
+        
+        std::vector<GdlNode*>::iterator lookAheadLast;
+        size_t lookAheadParsedSize;
         
         bool isInlineParsed = false;
 

@@ -28,14 +28,16 @@ public:
         return this->pos;
     }
 
+    // assume that parameters are always correct for performance
+
     void setPos(size_t pos)
     {
-        this->pos = this->normalizePos(pos);
+        this->pos = pos;
     }
 
-    size_t normalizePos(size_t pos)
+    void incPos()
     {
-        return std::max(0lu, std::min(pos, this->content.getSize()));
+        this->pos++;
     }
 
     char* getCurrentDataPtr()
@@ -50,12 +52,8 @@ public:
 
     char readSymbol()
     {
-        char symbol = '\0';
-        if (this->pos < this->content.getSize()) {
-            symbol = this->content.getDataPtr()[this->pos];
-            this->pos++;
-        }
-
+        char symbol = this->content.getDataPtr()[this->pos];
+        this->pos++;
         return symbol;
     }
 
@@ -68,6 +66,11 @@ public:
     std::string getLineAndColumn()
     {
         return this->getLineAndColumn(this->pos);
+    }
+
+    size_t normalizePos(size_t pos)
+    {
+        return std::max(0lu, std::min(pos, this->content.getSize()));
     }
 
     std::string getLineAndColumn(size_t pos)

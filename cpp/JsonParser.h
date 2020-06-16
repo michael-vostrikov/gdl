@@ -8,53 +8,54 @@ protected:
 
     Stream* stream;
 
+    std::vector<GdlNode> pool;
+
 public:
     
     enum RuleName {
-        Empty, Json,Obj,Pair,Arr,Value,String,Esc,Unicode,Hex,SafeCodePoint,Number,Int,Exp
+        Empty, Json, Obj, Pair, Arr, Value, String, Esc, Unicode, Hex, SafeCodePoint, Number, Int, Exp
     };
 
     static const char* ruleNames[];
-    
-    std::vector<GdlNode*> pool;
-    
+
 
     JsonParser(Stream* stream): stream(stream)
     {
         this->pool.reserve(stream->getContent().getSize() / 2);
     }
-    
-    virtual ~JsonParser()
+
+    size_t createGdlNode(uint32_t ruleName, ListDescriptor value)
     {
-        for (auto it = this->pool.begin(); it < this->pool.end(); ++it) {
-            GdlNode* node = *it;
-            delete node;
-        }
-    }
-    
-    GdlNode* createGdlNode(uint32_t ruleName)
-    {
-        auto node = new GdlNode(ruleName);
+        size_t newIndex = this->pool.size();
+        GdlNode node(ruleName, value);
         this->pool.push_back(node);
 
-        return node;
+        return newIndex;
     }
 
-    GdlNode* createGdlNode(uint32_t ruleName, StringDescriptor value)
+    size_t createGdlNode(uint32_t ruleName, StringDescriptor value)
     {
-        auto node = new GdlNode(ruleName, value);
+        size_t newIndex = this->pool.size();
+        GdlNode node(ruleName, value);
         this->pool.push_back(node);
-        return node;
+
+        return newIndex;
     }
-    
+
+    GdlNode* getRootNode()
+    {
+        return &this->pool.front();
+    }
+
     size_t systemParseString(const char* string, size_t size)
     {
         size_t initialPos = this->stream->getPos();
-        size_t parsedLength = 0;
+        size_t parsedSize = 0;
 
         for (size_t i = 0; i < size; i++) {
             if (this->stream->eof()) {
-                parsedLength = 0;
+                this->stream->setPos(initialPos);
+                parsedSize = 0;
                 break;
             }
 
@@ -62,14 +63,14 @@ public:
             char contentSymbol = string[i];
             if (contentSymbol != symbol) {
                 this->stream->setPos(initialPos);
-                parsedLength = 0;
+                parsedSize = 0;
                 break;
             }
 
-            parsedLength++;
+            parsedSize++;
         }
 
-        return parsedLength;
+        return parsedSize;
     }
 
     size_t systemParseRegexp(const char* str, int size)
@@ -78,7 +79,7 @@ public:
             return 0;
         }
 
-        size_t parsedLength = 0;
+        size_t parsedSize = 0;
         uint8_t symbol = this->stream->getCurrentSymbol();
 
         const char* data = str;
@@ -86,37 +87,33 @@ public:
             uint8_t from = data[i];
             uint8_t to = data[i + 1];
             if (symbol >= from && symbol <= to) {
-                parsedLength = 1;
+                this->stream->incPos();
+                parsedSize = 1;
                 break;
             }
         }
 
-        if (parsedLength == 0) {
-            return 0;
-        }
-
-        this->stream->readSymbol();
-
-        return parsedLength;
+        return parsedSize;
     }
 
-    void skipSpaces()
+    virtual void skipSpaces()
     {
         while (!this->stream->eof()) {
-            char symbol = this->stream->readSymbol();
+            char symbol = this->stream->getCurrentSymbol();
 
             if (! (symbol == ' ' || symbol == '\n' || symbol == '\t' || symbol == '\r')) {
-                this->stream->setPos(this->stream->getPos() - 1);
                 break;
             }
+
+            this->stream->incPos();
         }
     }
 
     
 
-    GdlNode* parseJson()
+    virtual ssize_t parseJson()
     {
-        GdlNode* res = NULL;
+        ssize_t parsedCount = -1;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -137,493 +134,483 @@ public:
             case 't':
             case 'f':
             case 'n':
-                res = this->statement1Json();
+                parsedCount = this->statement1Json();
             break;
         };
 
-        return res;
+        return parsedCount;
     }
 
-    GdlNode* statement1Json()
-    {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+    virtual ssize_t statement1Json()
+    {    
+        size_t initialStreamPos = this->stream->getPos();
+        size_t initialPoolSize = this->pool.size();
 
         auto ruleName = RuleName::Json;
-        
-        GdlNode* parsedElement = NULL;
-        char* streamData = NULL;
+        ssize_t totalParsedElementCount = 0;
+
+        ListDescriptor value(this->pool.size(), 0, 0);
+        size_t resultNodeIndex = this->createGdlNode(ruleName, value);
+
+        StringDescriptor lexemeValue("");
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementInitialPoolSize = 0;
+
+        ssize_t elementParsedCount = false;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+
+        size_t expressionInitialStreamPos = 0;
+        size_t expressionInitialPoolSize = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         size_t parsedSize = 0;
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            parsedElement = this->parseValue();
-            if (parsedElement == NULL) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
-            res->addToList(parsedElement);
+            elementParsedCount = this->parseValue();
+
+            isElementParsed = (elementParsedCount != -1);
+            if (!isElementParsed) break;
+            totalParsedElementCount++;
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            if (res == NULL) res = this->createGdlNode(ruleName);
+
+            this->pool[resultNodeIndex].getListValue().count = totalParsedElementCount;
+            this->pool[resultNodeIndex].getListValue().totalCount = (size_t)(this->pool.size() - initialPoolSize);
+
+            return totalParsedElementCount;
+
         } while (false);
 
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return NULL;
-        }
+        this->stream->setPos(initialStreamPos);
+        this->pool.resize(initialPoolSize);
 
-        return res;
+        return -1;
     }
 
-    GdlNode* parseObj()
+    virtual ssize_t parseObj()
     {
-        GdlNode* res = NULL;
+        ssize_t parsedCount = -1;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
             case '{':
-                res = this->statement1Obj();
-                if (res == NULL) res = this->statement2Obj();
+                parsedCount = this->statement1Obj();
+                if (parsedCount == -1) parsedCount = this->statement2Obj();
             break;
         };
 
-        return res;
+        return parsedCount;
     }
 
-    GdlNode* statement1Obj()
-    {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+    virtual ssize_t statement1Obj()
+    {    
+        size_t initialStreamPos = this->stream->getPos();
+        size_t initialPoolSize = this->pool.size();
 
         auto ruleName = RuleName::Obj;
-        
-        GdlNode* parsedElement = NULL;
-        char* streamData = NULL;
+        ssize_t totalParsedElementCount = 0;
+
+        ListDescriptor value(this->pool.size(), 0, 0);
+        size_t resultNodeIndex = this->createGdlNode(ruleName, value);
+
+        StringDescriptor lexemeValue("");
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementInitialPoolSize = 0;
+
+        ssize_t elementParsedCount = false;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+
+        size_t expressionInitialStreamPos = 0;
+        size_t expressionInitialPoolSize = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         size_t parsedSize = 0;
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString("{", 1);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString("{", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
 
             this->skipSpaces();
 
             // ------------------------------------------------
 
-            parsedElement = this->parsePair();
-            if (parsedElement == NULL) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
-            res->addToList(parsedElement);
+            elementParsedCount = this->parsePair();
+
+            isElementParsed = (elementParsedCount != -1);
+            if (!isElementParsed) break;
+            totalParsedElementCount++;
 
             this->skipSpaces();
 
             // ------------------------------------------------
 
             while (true) {
-                isInlineParsed = this->parseInline1_Obj_1(res);
-                if (isInlineParsed == false) {
-                    break;
-                }
-
-                
-                
+                elementParsedCount = this->parseInline1_Obj_1();
+    
+                isElementParsed = (elementParsedCount != -1);
+                if (!isElementParsed) break;
+                totalParsedElementCount += elementParsedCount;
             }
 
             this->skipSpaces();
 
             // ------------------------------------------------
 
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString("}", 1);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString("}", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
 
             this->skipSpaces();
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            if (res == NULL) res = this->createGdlNode(ruleName);
+
+            this->pool[resultNodeIndex].getListValue().count = totalParsedElementCount;
+            this->pool[resultNodeIndex].getListValue().totalCount = (size_t)(this->pool.size() - initialPoolSize);
+
+            return totalParsedElementCount;
+
         } while (false);
 
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return NULL;
-        }
+        this->stream->setPos(initialStreamPos);
+        this->pool.resize(initialPoolSize);
 
-        return res;
+        return -1;
     }
 
-    bool parseInline1_Obj_1(GdlNode*& res)
+    virtual ssize_t statement2Obj()
+    {    
+        size_t initialStreamPos = this->stream->getPos();
+        size_t initialPoolSize = this->pool.size();
+
+        auto ruleName = RuleName::Obj;
+        ssize_t totalParsedElementCount = 0;
+
+        ListDescriptor value(this->pool.size(), 0, 0);
+        size_t resultNodeIndex = this->createGdlNode(ruleName, value);
+
+        StringDescriptor lexemeValue("");
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementInitialPoolSize = 0;
+
+        ssize_t elementParsedCount = false;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+
+        size_t expressionInitialStreamPos = 0;
+        size_t expressionInitialPoolSize = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
+        size_t parsedSize = 0;
+        bool cut = false;  // TODO
+
+        do {
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString("{", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+
+            this->skipSpaces();
+
+            // ------------------------------------------------
+
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString("}", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+
+            this->skipSpaces();
+
+            // ------------------------------------------------
+
+            this->pool[resultNodeIndex].getListValue().count = totalParsedElementCount;
+            this->pool[resultNodeIndex].getListValue().totalCount = (size_t)(this->pool.size() - initialPoolSize);
+
+            return totalParsedElementCount;
+
+        } while (false);
+
+        this->stream->setPos(initialStreamPos);
+        this->pool.resize(initialPoolSize);
+
+        return -1;
+    }
+
+    virtual ssize_t parseInline1_Obj_1()
     {
-        bool isParsed = false;
+        ssize_t parsedCount = -1;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
             case ',':
-                isParsed = this->statement1Inline1_Obj_1(res);
+                parsedCount = this->statement1Inline1_Obj_1();
             break;
         };
 
-        return isParsed;
+        return parsedCount;
     }
 
-    bool statement1Inline1_Obj_1(GdlNode*& res)
-    {
-        
-        GdlNode* initialRes = res;
-        std::vector<GdlNode*>::iterator last;
-        if (res != NULL) last = res->getListValue().end() - 1;
-            
+    virtual ssize_t statement1Inline1_Obj_1()
+    {    
+        size_t initialStreamPos = this->stream->getPos();
+        size_t initialPoolSize = this->pool.size();
 
-        size_t initialPos = this->stream->getPos();
-    
         auto ruleName = RuleName::Obj;
+        ssize_t totalParsedElementCount = 0;
+
         
-        GdlNode* parsedElement = NULL;
-        char* streamData = NULL;
+
+        StringDescriptor lexemeValue("");
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementInitialPoolSize = 0;
+
+        ssize_t elementParsedCount = false;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+
+        size_t expressionInitialStreamPos = 0;
+        size_t expressionInitialPoolSize = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         size_t parsedSize = 0;
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString(",", 1);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString(",", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
 
             this->skipSpaces();
 
             // ------------------------------------------------
 
-            parsedElement = this->parsePair();
-            if (parsedElement == NULL) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
-            res->addToList(parsedElement);
+            elementParsedCount = this->parsePair();
+
+            isElementParsed = (elementParsedCount != -1);
+            if (!isElementParsed) break;
+            totalParsedElementCount++;
 
             this->skipSpaces();
 
             // ------------------------------------------------
 
-            isParsed = true;
             
-        GdlNode* initialRes = res;
-        std::vector<GdlNode*>::iterator last;
-        if (res != NULL) last = res->getListValue().end() - 1;
-            
-        } while (false);
-        
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            
-        if (res != NULL && initialRes != NULL) res->getListValue().erase(last + 1, res->getListValue().end());
-        res = initialRes;
-            
-        }
 
-        return isParsed;
-    }
+            return totalParsedElementCount;
 
-    GdlNode* statement2Obj()
-    {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
-
-        auto ruleName = RuleName::Obj;
-        
-        GdlNode* parsedElement = NULL;
-        char* streamData = NULL;
-        size_t parsedSize = 0;
-        bool cut = false;  // TODO
-
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
-        do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString("{", 1);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
-
-            this->skipSpaces();
-
-            // ------------------------------------------------
-
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString("}", 1);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
-
-            this->skipSpaces();
-
-            // ------------------------------------------------
-            
-            isParsed = true;
-            if (res == NULL) res = this->createGdlNode(ruleName);
         } while (false);
 
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return NULL;
-        }
+        this->stream->setPos(initialStreamPos);
+        this->pool.resize(initialPoolSize);
 
-        return res;
+        return -1;
     }
 
-    GdlNode* parsePair()
+    virtual ssize_t parsePair()
     {
-        GdlNode* res = NULL;
+        ssize_t parsedCount = -1;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
             case '"':
-                res = this->statement1Pair();
+                parsedCount = this->statement1Pair();
             break;
         };
 
-        return res;
+        return parsedCount;
     }
 
-    GdlNode* statement1Pair()
-    {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+    virtual ssize_t statement1Pair()
+    {    
+        size_t initialStreamPos = this->stream->getPos();
+        size_t initialPoolSize = this->pool.size();
 
         auto ruleName = RuleName::Pair;
-        
-        GdlNode* parsedElement = NULL;
-        char* streamData = NULL;
+        ssize_t totalParsedElementCount = 0;
+
+        ListDescriptor value(this->pool.size(), 0, 0);
+        size_t resultNodeIndex = this->createGdlNode(ruleName, value);
+
+        StringDescriptor lexemeValue("");
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementInitialPoolSize = 0;
+
+        ssize_t elementParsedCount = false;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+
+        size_t expressionInitialStreamPos = 0;
+        size_t expressionInitialPoolSize = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         size_t parsedSize = 0;
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->parseString();
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
-            parsedElement = this->createGdlNode(String, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->parseString();
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            lexemeValue = StringDescriptor(this->stream->getContent().getDataPtr() + elementInitialStreamPos, elementParsedSize);
+            this->createGdlNode(RuleName::String, lexemeValue);
+            totalParsedElementCount++;
 
             this->skipSpaces();
 
             // ------------------------------------------------
 
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString(":", 1);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString(":", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
 
             this->skipSpaces();
 
             // ------------------------------------------------
 
-            parsedElement = this->parseValue();
-            if (parsedElement == NULL) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
-            res->addToList(parsedElement);
+            elementParsedCount = this->parseValue();
+
+            isElementParsed = (elementParsedCount != -1);
+            if (!isElementParsed) break;
+            totalParsedElementCount++;
 
             this->skipSpaces();
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            if (res == NULL) res = this->createGdlNode(ruleName);
+
+            this->pool[resultNodeIndex].getListValue().count = totalParsedElementCount;
+            this->pool[resultNodeIndex].getListValue().totalCount = (size_t)(this->pool.size() - initialPoolSize);
+
+            return totalParsedElementCount;
+
         } while (false);
 
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return NULL;
-        }
+        this->stream->setPos(initialStreamPos);
+        this->pool.resize(initialPoolSize);
 
-        return res;
+        return -1;
     }
 
-    GdlNode* parseArr()
+    virtual ssize_t parseArr()
     {
-        GdlNode* res = NULL;
+        ssize_t parsedCount = -1;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
             case '[':
-                res = this->statement1Arr();
+                parsedCount = this->statement1Arr();
             break;
         };
 
-        return res;
+        return parsedCount;
     }
 
-    GdlNode* statement1Arr()
-    {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+    virtual ssize_t statement1Arr()
+    {    
+        size_t initialStreamPos = this->stream->getPos();
+        size_t initialPoolSize = this->pool.size();
 
         auto ruleName = RuleName::Arr;
-        
-        GdlNode* parsedElement = NULL;
-        char* streamData = NULL;
+        ssize_t totalParsedElementCount = 0;
+
+        ListDescriptor value(this->pool.size(), 0, 0);
+        size_t resultNodeIndex = this->createGdlNode(ruleName, value);
+
+        StringDescriptor lexemeValue("");
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementInitialPoolSize = 0;
+
+        ssize_t elementParsedCount = false;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+
+        size_t expressionInitialStreamPos = 0;
+        size_t expressionInitialPoolSize = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         size_t parsedSize = 0;
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString("[", 1);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString("[", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
 
             this->skipSpaces();
 
             // ------------------------------------------------
 
-            isInlineParsed = this->parseInline1_Arr_1(res);
-            if (! (isInlineParsed == false)) {
-                
-                
+            elementParsedCount = this->parseInline1_Arr_1();
+
+            isElementParsed = (elementParsedCount != -1);
+            if (isElementParsed) {
+                totalParsedElementCount += elementParsedCount;
             }
 
             this->skipSpaces();
 
             // ------------------------------------------------
 
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString("]", 1);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString("]", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
 
             this->skipSpaces();
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            if (res == NULL) res = this->createGdlNode(ruleName);
+
+            this->pool[resultNodeIndex].getListValue().count = totalParsedElementCount;
+            this->pool[resultNodeIndex].getListValue().totalCount = (size_t)(this->pool.size() - initialPoolSize);
+
+            return totalParsedElementCount;
+
         } while (false);
 
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return NULL;
-        }
+        this->stream->setPos(initialStreamPos);
+        this->pool.resize(initialPoolSize);
 
-        return res;
+        return -1;
     }
 
-    bool parseInline1_Arr_1(GdlNode*& res)
+    virtual ssize_t parseInline1_Arr_1()
     {
-        bool isParsed = false;
+        ssize_t parsedCount = -1;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -644,189 +631,163 @@ public:
             case 't':
             case 'f':
             case 'n':
-                isParsed = this->statement1Inline1_Arr_1(res);
+                parsedCount = this->statement1Inline1_Arr_1();
             break;
         };
 
-        return isParsed;
+        return parsedCount;
     }
 
-    bool statement1Inline1_Arr_1(GdlNode*& res)
-    {
-        
-        GdlNode* initialRes = res;
-        std::vector<GdlNode*>::iterator last;
-        if (res != NULL) last = res->getListValue().end() - 1;
-            
+    virtual ssize_t statement1Inline1_Arr_1()
+    {    
+        size_t initialStreamPos = this->stream->getPos();
+        size_t initialPoolSize = this->pool.size();
 
-        size_t initialPos = this->stream->getPos();
-    
         auto ruleName = RuleName::Arr;
+        ssize_t totalParsedElementCount = 0;
+
         
-        GdlNode* parsedElement = NULL;
-        char* streamData = NULL;
+
+        StringDescriptor lexemeValue("");
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementInitialPoolSize = 0;
+
+        ssize_t elementParsedCount = false;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+
+        size_t expressionInitialStreamPos = 0;
+        size_t expressionInitialPoolSize = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         size_t parsedSize = 0;
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            parsedElement = this->parseValue();
-            if (parsedElement == NULL) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
-            res->addToList(parsedElement);
+            elementParsedCount = this->parseValue();
+
+            isElementParsed = (elementParsedCount != -1);
+            if (!isElementParsed) break;
+            totalParsedElementCount++;
 
             this->skipSpaces();
 
             // ------------------------------------------------
 
             while (true) {
-                isInlineParsed = this->parseInline1_Inline1_Arr_1_1(res);
-                if (isInlineParsed == false) {
-                    break;
-                }
-
-                
-                
+                elementParsedCount = this->parseInline1_Inline1_Arr_1_1();
+    
+                isElementParsed = (elementParsedCount != -1);
+                if (!isElementParsed) break;
+                totalParsedElementCount += elementParsedCount;
             }
 
             this->skipSpaces();
 
             // ------------------------------------------------
 
-            isParsed = true;
             
-        GdlNode* initialRes = res;
-        std::vector<GdlNode*>::iterator last;
-        if (res != NULL) last = res->getListValue().end() - 1;
-            
-        } while (false);
-        
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            
-        if (res != NULL && initialRes != NULL) res->getListValue().erase(last + 1, res->getListValue().end());
-        res = initialRes;
-            
-        }
 
-        return isParsed;
+            return totalParsedElementCount;
+
+        } while (false);
+
+        this->stream->setPos(initialStreamPos);
+        this->pool.resize(initialPoolSize);
+
+        return -1;
     }
 
-    bool parseInline1_Inline1_Arr_1_1(GdlNode*& res)
+    virtual ssize_t parseInline1_Inline1_Arr_1_1()
     {
-        bool isParsed = false;
+        ssize_t parsedCount = -1;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
             case ',':
-                isParsed = this->statement1Inline1_Inline1_Arr_1_1(res);
+                parsedCount = this->statement1Inline1_Inline1_Arr_1_1();
             break;
         };
 
-        return isParsed;
+        return parsedCount;
     }
 
-    bool statement1Inline1_Inline1_Arr_1_1(GdlNode*& res)
-    {
-        
-        GdlNode* initialRes = res;
-        std::vector<GdlNode*>::iterator last;
-        if (res != NULL) last = res->getListValue().end() - 1;
-            
+    virtual ssize_t statement1Inline1_Inline1_Arr_1_1()
+    {    
+        size_t initialStreamPos = this->stream->getPos();
+        size_t initialPoolSize = this->pool.size();
 
-        size_t initialPos = this->stream->getPos();
-    
         auto ruleName = RuleName::Arr;
+        ssize_t totalParsedElementCount = 0;
+
         
-        GdlNode* parsedElement = NULL;
-        char* streamData = NULL;
+
+        StringDescriptor lexemeValue("");
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementInitialPoolSize = 0;
+
+        ssize_t elementParsedCount = false;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+
+        size_t expressionInitialStreamPos = 0;
+        size_t expressionInitialPoolSize = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         size_t parsedSize = 0;
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString(",", 1);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString(",", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
 
             this->skipSpaces();
 
             // ------------------------------------------------
 
-            parsedElement = this->parseValue();
-            if (parsedElement == NULL) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
-            res->addToList(parsedElement);
+            elementParsedCount = this->parseValue();
+
+            isElementParsed = (elementParsedCount != -1);
+            if (!isElementParsed) break;
+            totalParsedElementCount++;
 
             this->skipSpaces();
 
             // ------------------------------------------------
 
-            isParsed = true;
             
-        GdlNode* initialRes = res;
-        std::vector<GdlNode*>::iterator last;
-        if (res != NULL) last = res->getListValue().end() - 1;
-            
+
+            return totalParsedElementCount;
+
         } while (false);
-        
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            
-        if (res != NULL && initialRes != NULL) res->getListValue().erase(last + 1, res->getListValue().end());
-        res = initialRes;
-            
-        }
 
-        return isParsed;
+        this->stream->setPos(initialStreamPos);
+        this->pool.resize(initialPoolSize);
+
+        return -1;
     }
 
-    GdlNode* parseValue()
+    virtual ssize_t parseValue()
     {
-        GdlNode* res = NULL;
+        ssize_t parsedCount = -1;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
             case '{':
-                res = this->statement1Value();
+                parsedCount = this->statement1Value();
             break;
 
             case '"':
-                res = this->statement2Value();
+                parsedCount = this->statement2Value();
             break;
 
             case '-':
@@ -840,477 +801,483 @@ public:
             case '7':
             case '8':
             case '9':
-                res = this->statement3Value();
+                parsedCount = this->statement3Value();
             break;
 
             case '[':
-                res = this->statement4Value();
+                parsedCount = this->statement4Value();
             break;
 
             case 't':
-                res = this->statement5Value();
+                parsedCount = this->statement5Value();
             break;
 
             case 'f':
-                res = this->statement6Value();
+                parsedCount = this->statement6Value();
             break;
 
             case 'n':
-                res = this->statement7Value();
+                parsedCount = this->statement7Value();
             break;
         };
 
-        return res;
+        return parsedCount;
     }
 
-    GdlNode* statement1Value()
-    {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+    virtual ssize_t statement1Value()
+    {    
+        size_t initialStreamPos = this->stream->getPos();
+        size_t initialPoolSize = this->pool.size();
 
         auto ruleName = RuleName::Value;
-        
-        GdlNode* parsedElement = NULL;
-        char* streamData = NULL;
+        ssize_t totalParsedElementCount = 0;
+
+        ListDescriptor value(this->pool.size(), 0, 0);
+        size_t resultNodeIndex = this->createGdlNode(ruleName, value);
+
+        StringDescriptor lexemeValue("");
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementInitialPoolSize = 0;
+
+        ssize_t elementParsedCount = false;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+
+        size_t expressionInitialStreamPos = 0;
+        size_t expressionInitialPoolSize = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         size_t parsedSize = 0;
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            parsedElement = this->parseObj();
-            if (parsedElement == NULL) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
-            res->addToList(parsedElement);
+            elementParsedCount = this->parseObj();
+
+            isElementParsed = (elementParsedCount != -1);
+            if (!isElementParsed) break;
+            totalParsedElementCount++;
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            if (res == NULL) res = this->createGdlNode(ruleName);
+
+            this->pool[resultNodeIndex].getListValue().count = totalParsedElementCount;
+            this->pool[resultNodeIndex].getListValue().totalCount = (size_t)(this->pool.size() - initialPoolSize);
+
+            return totalParsedElementCount;
+
         } while (false);
 
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return NULL;
-        }
+        this->stream->setPos(initialStreamPos);
+        this->pool.resize(initialPoolSize);
 
-        return res;
+        return -1;
     }
 
-    GdlNode* statement2Value()
-    {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+    virtual ssize_t statement2Value()
+    {    
+        size_t initialStreamPos = this->stream->getPos();
+        size_t initialPoolSize = this->pool.size();
 
         auto ruleName = RuleName::Value;
-        
-        GdlNode* parsedElement = NULL;
-        char* streamData = NULL;
+        ssize_t totalParsedElementCount = 0;
+
+        ListDescriptor value(this->pool.size(), 0, 0);
+        size_t resultNodeIndex = this->createGdlNode(ruleName, value);
+
+        StringDescriptor lexemeValue("");
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementInitialPoolSize = 0;
+
+        ssize_t elementParsedCount = false;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+
+        size_t expressionInitialStreamPos = 0;
+        size_t expressionInitialPoolSize = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         size_t parsedSize = 0;
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->parseString();
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
-            parsedElement = this->createGdlNode(String, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->parseString();
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            lexemeValue = StringDescriptor(this->stream->getContent().getDataPtr() + elementInitialStreamPos, elementParsedSize);
+            this->createGdlNode(RuleName::String, lexemeValue);
+            totalParsedElementCount++;
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            if (res == NULL) res = this->createGdlNode(ruleName);
+
+            this->pool[resultNodeIndex].getListValue().count = totalParsedElementCount;
+            this->pool[resultNodeIndex].getListValue().totalCount = (size_t)(this->pool.size() - initialPoolSize);
+
+            return totalParsedElementCount;
+
         } while (false);
 
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return NULL;
-        }
+        this->stream->setPos(initialStreamPos);
+        this->pool.resize(initialPoolSize);
 
-        return res;
+        return -1;
     }
 
-    GdlNode* statement3Value()
-    {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+    virtual ssize_t statement3Value()
+    {    
+        size_t initialStreamPos = this->stream->getPos();
+        size_t initialPoolSize = this->pool.size();
 
         auto ruleName = RuleName::Value;
-        
-        GdlNode* parsedElement = NULL;
-        char* streamData = NULL;
+        ssize_t totalParsedElementCount = 0;
+
+        ListDescriptor value(this->pool.size(), 0, 0);
+        size_t resultNodeIndex = this->createGdlNode(ruleName, value);
+
+        StringDescriptor lexemeValue("");
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementInitialPoolSize = 0;
+
+        ssize_t elementParsedCount = false;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+
+        size_t expressionInitialStreamPos = 0;
+        size_t expressionInitialPoolSize = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         size_t parsedSize = 0;
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->parseNumber();
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
-            parsedElement = this->createGdlNode(Number, StringDescriptor(streamData, parsedSize));
-            res->addToList(parsedElement);
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->parseNumber();
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            lexemeValue = StringDescriptor(this->stream->getContent().getDataPtr() + elementInitialStreamPos, elementParsedSize);
+            this->createGdlNode(RuleName::Number, lexemeValue);
+            totalParsedElementCount++;
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            if (res == NULL) res = this->createGdlNode(ruleName);
+
+            this->pool[resultNodeIndex].getListValue().count = totalParsedElementCount;
+            this->pool[resultNodeIndex].getListValue().totalCount = (size_t)(this->pool.size() - initialPoolSize);
+
+            return totalParsedElementCount;
+
         } while (false);
 
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return NULL;
-        }
+        this->stream->setPos(initialStreamPos);
+        this->pool.resize(initialPoolSize);
 
-        return res;
+        return -1;
     }
 
-    GdlNode* statement4Value()
-    {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+    virtual ssize_t statement4Value()
+    {    
+        size_t initialStreamPos = this->stream->getPos();
+        size_t initialPoolSize = this->pool.size();
 
         auto ruleName = RuleName::Value;
-        
-        GdlNode* parsedElement = NULL;
-        char* streamData = NULL;
+        ssize_t totalParsedElementCount = 0;
+
+        ListDescriptor value(this->pool.size(), 0, 0);
+        size_t resultNodeIndex = this->createGdlNode(ruleName, value);
+
+        StringDescriptor lexemeValue("");
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementInitialPoolSize = 0;
+
+        ssize_t elementParsedCount = false;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+
+        size_t expressionInitialStreamPos = 0;
+        size_t expressionInitialPoolSize = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         size_t parsedSize = 0;
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            parsedElement = this->parseArr();
-            if (parsedElement == NULL) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
-            res->addToList(parsedElement);
+            elementParsedCount = this->parseArr();
+
+            isElementParsed = (elementParsedCount != -1);
+            if (!isElementParsed) break;
+            totalParsedElementCount++;
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            if (res == NULL) res = this->createGdlNode(ruleName);
+
+            this->pool[resultNodeIndex].getListValue().count = totalParsedElementCount;
+            this->pool[resultNodeIndex].getListValue().totalCount = (size_t)(this->pool.size() - initialPoolSize);
+
+            return totalParsedElementCount;
+
         } while (false);
 
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return NULL;
-        }
+        this->stream->setPos(initialStreamPos);
+        this->pool.resize(initialPoolSize);
 
-        return res;
+        return -1;
     }
 
-    GdlNode* statement5Value()
-    {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+    virtual ssize_t statement5Value()
+    {    
+        size_t initialStreamPos = this->stream->getPos();
+        size_t initialPoolSize = this->pool.size();
 
         auto ruleName = RuleName::Value;
-        
-        GdlNode* parsedElement = NULL;
-        char* streamData = NULL;
+        ssize_t totalParsedElementCount = 0;
+
+        ListDescriptor value(this->pool.size(), 0, 0);
+        size_t resultNodeIndex = this->createGdlNode(ruleName, value);
+
+        StringDescriptor lexemeValue("");
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementInitialPoolSize = 0;
+
+        ssize_t elementParsedCount = false;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+
+        size_t expressionInitialStreamPos = 0;
+        size_t expressionInitialPoolSize = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         size_t parsedSize = 0;
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString("true", 4);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString("true", 4);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            if (res == NULL) res = this->createGdlNode(ruleName);
+
+            this->pool[resultNodeIndex].getListValue().count = totalParsedElementCount;
+            this->pool[resultNodeIndex].getListValue().totalCount = (size_t)(this->pool.size() - initialPoolSize);
+
+            return totalParsedElementCount;
+
         } while (false);
 
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return NULL;
-        }
+        this->stream->setPos(initialStreamPos);
+        this->pool.resize(initialPoolSize);
 
-        return res;
+        return -1;
     }
 
-    GdlNode* statement6Value()
-    {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+    virtual ssize_t statement6Value()
+    {    
+        size_t initialStreamPos = this->stream->getPos();
+        size_t initialPoolSize = this->pool.size();
 
         auto ruleName = RuleName::Value;
-        
-        GdlNode* parsedElement = NULL;
-        char* streamData = NULL;
+        ssize_t totalParsedElementCount = 0;
+
+        ListDescriptor value(this->pool.size(), 0, 0);
+        size_t resultNodeIndex = this->createGdlNode(ruleName, value);
+
+        StringDescriptor lexemeValue("");
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementInitialPoolSize = 0;
+
+        ssize_t elementParsedCount = false;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+
+        size_t expressionInitialStreamPos = 0;
+        size_t expressionInitialPoolSize = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         size_t parsedSize = 0;
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString("false", 5);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString("false", 5);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            if (res == NULL) res = this->createGdlNode(ruleName);
+
+            this->pool[resultNodeIndex].getListValue().count = totalParsedElementCount;
+            this->pool[resultNodeIndex].getListValue().totalCount = (size_t)(this->pool.size() - initialPoolSize);
+
+            return totalParsedElementCount;
+
         } while (false);
 
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return NULL;
-        }
+        this->stream->setPos(initialStreamPos);
+        this->pool.resize(initialPoolSize);
 
-        return res;
+        return -1;
     }
 
-    GdlNode* statement7Value()
-    {
-        GdlNode* res = NULL;
-        size_t initialPos = this->stream->getPos();
+    virtual ssize_t statement7Value()
+    {    
+        size_t initialStreamPos = this->stream->getPos();
+        size_t initialPoolSize = this->pool.size();
 
         auto ruleName = RuleName::Value;
-        
-        GdlNode* parsedElement = NULL;
-        char* streamData = NULL;
+        ssize_t totalParsedElementCount = 0;
+
+        ListDescriptor value(this->pool.size(), 0, 0);
+        size_t resultNodeIndex = this->createGdlNode(ruleName, value);
+
+        StringDescriptor lexemeValue("");
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementInitialPoolSize = 0;
+
+        ssize_t elementParsedCount = false;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+
+        size_t expressionInitialStreamPos = 0;
+        size_t expressionInitialPoolSize = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         size_t parsedSize = 0;
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString("null", 4);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            if (res == NULL) res = this->createGdlNode(ruleName);
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString("null", 4);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            if (res == NULL) res = this->createGdlNode(ruleName);
+
+            this->pool[resultNodeIndex].getListValue().count = totalParsedElementCount;
+            this->pool[resultNodeIndex].getListValue().totalCount = (size_t)(this->pool.size() - initialPoolSize);
+
+            return totalParsedElementCount;
+
         } while (false);
 
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return NULL;
-        }
+        this->stream->setPos(initialStreamPos);
+        this->pool.resize(initialPoolSize);
 
-        return res;
+        return -1;
     }
 
     size_t parseString()
     {
-        size_t res = 0;
+        size_t parsedSize = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
             case '"':
-                res = this->statement1String();
+                parsedSize = this->statement1String();
             break;
         };
 
-        return res;
+        return parsedSize;
     }
 
     size_t statement1String()
     {
-        size_t res = 0;
-        size_t initialPos = this->stream->getPos();
-
-        auto ruleName = RuleName::String;
-        
-        size_t parsedElement = 0;
-        char* streamData = NULL;
         size_t parsedSize = 0;
+        
+        size_t initialStreamPos = this->stream->getPos();
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+        
+        size_t expressionInitialStreamPos = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString("\"", 1);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString("\"", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
 
             while (true) {
-                initialElementPos = this->stream->getPos();
-                lookAheadParsedSize = res;
+                elementInitialStreamPos = this->stream->getPos();
                 
-                
-                streamData = this->stream->getCurrentDataPtr(); 
-                parsedSize = this->systemParseString("\"", 1);
-                this->stream->setPos(initialElementPos);
-                res = lookAheadParsedSize;
-                
-                if (! (parsedSize == 0)) {
-                    break;
-                }
+                elementInitialStreamPos = this->stream->getPos();
+                elementParsedSize = this->systemParseString("\"", 1);
     
-                isInlineParsed = this->parseInline1_String_1(res);
-                if (isInlineParsed == false) {
-                    break;
+                isElementParsed = (elementParsedSize != 0);
+                if (isElementParsed) {
+                    this->stream->setPos(elementInitialStreamPos);
+                    isElementParsed = false;
                 }
-
-                
-                
+                else {
+                    elementInitialStreamPos = this->stream->getPos();
+                    elementParsedSize = this->parseInline1_String_1();
+        
+                    isElementParsed = (elementParsedSize != 0);
+                }
+                if (!isElementParsed) break;
+                parsedSize += elementParsedSize;
             }
 
             // ------------------------------------------------
 
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString("\"", 1);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString("\"", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            
+
+            return parsedSize;
+
         } while (false);
-
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return 0;
-        }
-
-        return res;
+        
+        this->stream->setPos(initialStreamPos);
+        
+        return false;
     }
 
-    bool parseInline1_String_1(size_t& res)
+    size_t parseInline1_String_1()
     {
-        bool isParsed = false;
+        size_t parsedSize = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
             case '\\':
-                isParsed = this->statement1Inline1_String_1(res);
-                if (isParsed == false) isParsed = this->statement2Inline1_String_1(res);
+                parsedSize = this->statement1Inline1_String_1();
+                if (parsedSize == 0) parsedSize = this->statement2Inline1_String_1();
             break;
 
             case '\x20':
@@ -1536,199 +1503,147 @@ public:
             case '\xFD':
             case '\xFE':
             case '\xFF':
-                isParsed = this->statement2Inline1_String_1(res);
+                parsedSize = this->statement2Inline1_String_1();
             break;
         };
 
-        return isParsed;
+        return parsedSize;
     }
 
-    bool statement1Inline1_String_1(size_t& res)
+    size_t statement1Inline1_String_1()
     {
-        
-        size_t initialRes = res;
-            
-
-        size_t initialPos = this->stream->getPos();
-    
-        auto ruleName = RuleName::String;
-        
-        size_t parsedElement = 0;
-        char* streamData = NULL;
         size_t parsedSize = 0;
+        
+        size_t initialStreamPos = this->stream->getPos();
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+        
+        size_t expressionInitialStreamPos = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->parseEsc();
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->parseEsc();
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
 
-            isParsed = true;
-            
-        size_t initialRes = res;
-            
+            return parsedSize;
+
         } while (false);
         
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            
-        res = initialRes;
-            
-        }
-
-        return isParsed;
+        this->stream->setPos(initialStreamPos);
+        
+        return false;
     }
 
-    bool statement2Inline1_String_1(size_t& res)
+    size_t statement2Inline1_String_1()
     {
-        
-        size_t initialRes = res;
-            
-
-        size_t initialPos = this->stream->getPos();
-    
-        auto ruleName = RuleName::String;
-        
-        size_t parsedElement = 0;
-        char* streamData = NULL;
         size_t parsedSize = 0;
+        
+        size_t initialStreamPos = this->stream->getPos();
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+        
+        size_t expressionInitialStreamPos = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->parseSafeCodePoint();
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->parseSafeCodePoint();
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
 
-            isParsed = true;
-            
-        size_t initialRes = res;
-            
+            return parsedSize;
+
         } while (false);
         
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            
-        res = initialRes;
-            
-        }
-
-        return isParsed;
+        this->stream->setPos(initialStreamPos);
+        
+        return false;
     }
 
     size_t parseEsc()
     {
-        size_t res = 0;
+        size_t parsedSize = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
             case '\\':
-                res = this->statement1Esc();
+                parsedSize = this->statement1Esc();
             break;
         };
 
-        return res;
+        return parsedSize;
     }
 
     size_t statement1Esc()
     {
-        size_t res = 0;
-        size_t initialPos = this->stream->getPos();
-
-        auto ruleName = RuleName::Esc;
-        
-        size_t parsedElement = 0;
-        char* streamData = NULL;
         size_t parsedSize = 0;
+        
+        size_t initialStreamPos = this->stream->getPos();
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+        
+        size_t expressionInitialStreamPos = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString("\\", 1);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString("\\", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
 
-            isInlineParsed = this->parseInline1_Esc_1(res);
-            if (isInlineParsed == false) {
-                // TODO: cut
-                break;
-            }
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->parseInline1_Esc_1();
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            
+
+            return parsedSize;
+
         } while (false);
-
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return 0;
-        }
-
-        return res;
+        
+        this->stream->setPos(initialStreamPos);
+        
+        return false;
     }
 
-    bool parseInline1_Esc_1(size_t& res)
+    size_t parseInline1_Esc_1()
     {
-        bool isParsed = false;
+        size_t parsedSize = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -1740,239 +1655,178 @@ public:
             case 'n':
             case 'r':
             case 't':
-                isParsed = this->statement1Inline1_Esc_1(res);
+                parsedSize = this->statement1Inline1_Esc_1();
             break;
 
             case 'u':
-                isParsed = this->statement2Inline1_Esc_1(res);
+                parsedSize = this->statement2Inline1_Esc_1();
             break;
         };
 
-        return isParsed;
+        return parsedSize;
     }
 
-    bool statement1Inline1_Esc_1(size_t& res)
+    size_t statement1Inline1_Esc_1()
     {
-        
-        size_t initialRes = res;
-            
-
-        size_t initialPos = this->stream->getPos();
-    
-        auto ruleName = RuleName::Esc;
-        
-        size_t parsedElement = 0;
-        char* streamData = NULL;
         size_t parsedSize = 0;
+        
+        size_t initialStreamPos = this->stream->getPos();
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+        
+        size_t expressionInitialStreamPos = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseRegexp("\"\"\\\\//bbffnnrrtt", 16);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseRegexp("\"\"\\\\//bbffnnrrtt", 16);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
 
-            isParsed = true;
-            
-        size_t initialRes = res;
-            
+            return parsedSize;
+
         } while (false);
         
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            
-        res = initialRes;
-            
-        }
-
-        return isParsed;
+        this->stream->setPos(initialStreamPos);
+        
+        return false;
     }
 
-    bool statement2Inline1_Esc_1(size_t& res)
+    size_t statement2Inline1_Esc_1()
     {
-        
-        size_t initialRes = res;
-            
-
-        size_t initialPos = this->stream->getPos();
-    
-        auto ruleName = RuleName::Esc;
-        
-        size_t parsedElement = 0;
-        char* streamData = NULL;
         size_t parsedSize = 0;
+        
+        size_t initialStreamPos = this->stream->getPos();
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+        
+        size_t expressionInitialStreamPos = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->parseUnicode();
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->parseUnicode();
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
 
-            isParsed = true;
-            
-        size_t initialRes = res;
-            
+            return parsedSize;
+
         } while (false);
         
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            
-        res = initialRes;
-            
-        }
-
-        return isParsed;
+        this->stream->setPos(initialStreamPos);
+        
+        return false;
     }
 
     size_t parseUnicode()
     {
-        size_t res = 0;
+        size_t parsedSize = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
             case 'u':
-                res = this->statement1Unicode();
+                parsedSize = this->statement1Unicode();
             break;
         };
 
-        return res;
+        return parsedSize;
     }
 
     size_t statement1Unicode()
     {
-        size_t res = 0;
-        size_t initialPos = this->stream->getPos();
-
-        auto ruleName = RuleName::Unicode;
-        
-        size_t parsedElement = 0;
-        char* streamData = NULL;
         size_t parsedSize = 0;
+        
+        size_t initialStreamPos = this->stream->getPos();
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+        
+        size_t expressionInitialStreamPos = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString("u", 1);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString("u", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
 
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->parseHex();
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->parseHex();
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
 
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->parseHex();
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->parseHex();
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
 
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->parseHex();
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->parseHex();
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
 
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->parseHex();
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->parseHex();
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            
+
+            return parsedSize;
+
         } while (false);
-
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return 0;
-        }
-
-        return res;
+        
+        this->stream->setPos(initialStreamPos);
+        
+        return false;
     }
 
     size_t parseHex()
     {
-        size_t res = 0;
+        size_t parsedSize = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -1998,65 +1852,52 @@ public:
             case 'D':
             case 'E':
             case 'F':
-                res = this->statement1Hex();
+                parsedSize = this->statement1Hex();
             break;
         };
 
-        return res;
+        return parsedSize;
     }
 
     size_t statement1Hex()
     {
-        size_t res = 0;
-        size_t initialPos = this->stream->getPos();
-
-        auto ruleName = RuleName::Hex;
-        
-        size_t parsedElement = 0;
-        char* streamData = NULL;
         size_t parsedSize = 0;
+        
+        size_t initialStreamPos = this->stream->getPos();
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+        
+        size_t expressionInitialStreamPos = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseRegexp("09afAF", 6);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseRegexp("09afAF", 6);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            
+
+            return parsedSize;
+
         } while (false);
-
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return 0;
-        }
-
-        return res;
+        
+        this->stream->setPos(initialStreamPos);
+        
+        return false;
     }
 
     size_t parseSafeCodePoint()
     {
-        size_t res = 0;
+        size_t parsedSize = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -2284,65 +2125,52 @@ public:
             case '\xFD':
             case '\xFE':
             case '\xFF':
-                res = this->statement1SafeCodePoint();
+                parsedSize = this->statement1SafeCodePoint();
             break;
         };
 
-        return res;
+        return parsedSize;
     }
 
     size_t statement1SafeCodePoint()
     {
-        size_t res = 0;
-        size_t initialPos = this->stream->getPos();
-
-        auto ruleName = RuleName::SafeCodePoint;
-        
-        size_t parsedElement = 0;
-        char* streamData = NULL;
         size_t parsedSize = 0;
+        
+        size_t initialStreamPos = this->stream->getPos();
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+        
+        size_t expressionInitialStreamPos = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseRegexp("\x20\xFF", 2);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseRegexp("\x20\xFF", 2);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            
+
+            return parsedSize;
+
         } while (false);
-
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return 0;
-        }
-
-        return res;
+        
+        this->stream->setPos(initialStreamPos);
+        
+        return false;
     }
 
     size_t parseNumber()
     {
-        size_t res = 0;
+        size_t parsedSize = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
@@ -2357,189 +2185,157 @@ public:
             case '7':
             case '8':
             case '9':
-                res = this->statement1Number();
+                parsedSize = this->statement1Number();
             break;
         };
 
-        return res;
+        return parsedSize;
     }
 
     size_t statement1Number()
     {
-        size_t res = 0;
-        size_t initialPos = this->stream->getPos();
-
-        auto ruleName = RuleName::Number;
-        
-        size_t parsedElement = 0;
-        char* streamData = NULL;
         size_t parsedSize = 0;
+        
+        size_t initialStreamPos = this->stream->getPos();
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+        
+        size_t expressionInitialStreamPos = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString("-", 1);
-            if (! (parsedSize == 0)) {
-                
-                res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString("-", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (isElementParsed) {
+                parsedSize += elementParsedSize;
             }
 
             // ------------------------------------------------
 
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->parseInt();
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->parseInt();
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
 
-            isInlineParsed = this->parseInline1_Number_1(res);
-            if (! (isInlineParsed == false)) {
-                
-                
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->parseInline1_Number_1();
+
+            isElementParsed = (elementParsedSize != 0);
+            if (isElementParsed) {
+                parsedSize += elementParsedSize;
             }
 
             // ------------------------------------------------
 
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->parseExp();
-            if (! (parsedSize == 0)) {
-                
-                res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->parseExp();
+
+            isElementParsed = (elementParsedSize != 0);
+            if (isElementParsed) {
+                parsedSize += elementParsedSize;
             }
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            
+
+            return parsedSize;
+
         } while (false);
-
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return 0;
-        }
-
-        return res;
+        
+        this->stream->setPos(initialStreamPos);
+        
+        return false;
     }
 
-    bool parseInline1_Number_1(size_t& res)
+    size_t parseInline1_Number_1()
     {
-        bool isParsed = false;
+        size_t parsedSize = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
             case '.':
-                isParsed = this->statement1Inline1_Number_1(res);
+                parsedSize = this->statement1Inline1_Number_1();
             break;
         };
 
-        return isParsed;
+        return parsedSize;
     }
 
-    bool statement1Inline1_Number_1(size_t& res)
+    size_t statement1Inline1_Number_1()
     {
-        
-        size_t initialRes = res;
-            
-
-        size_t initialPos = this->stream->getPos();
-    
-        auto ruleName = RuleName::Number;
-        
-        size_t parsedElement = 0;
-        char* streamData = NULL;
         size_t parsedSize = 0;
+        
+        size_t initialStreamPos = this->stream->getPos();
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+        
+        size_t expressionInitialStreamPos = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString(".", 1);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString(".", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
 
-            parsedCount = 0;
-            outerParsedSize = res;
-            
+            expressionInitialStreamPos = this->stream->getPos();
+            quantifierParsedElementCount = 0;
             while (true) {
-                streamData = this->stream->getCurrentDataPtr(); 
-                parsedSize = this->systemParseRegexp("09", 2);
-                if (parsedSize == 0) {
-                    break;
-                }
-
+                elementInitialStreamPos = this->stream->getPos();
+                elementParsedSize = this->systemParseRegexp("09", 2);
+    
+                isElementParsed = (elementParsedSize != 0);
+                if (!isElementParsed) break;
+                parsedSize += elementParsedSize;
                 
-                res += parsedSize;
-                
-                parsedCount++;
+                quantifierParsedElementCount++;
             }
-            if (parsedCount < 1) {
-                res = outerParsedSize;
-                // TODO: cut
+            if (quantifierParsedElementCount < 1) {
+                this->stream->setPos(expressionInitialStreamPos);
+                
                 break;
             }
 
             // ------------------------------------------------
 
-            isParsed = true;
-            
-        size_t initialRes = res;
-            
+            return parsedSize;
+
         } while (false);
         
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            
-        res = initialRes;
-            
-        }
-
-        return isParsed;
+        this->stream->setPos(initialStreamPos);
+        
+        return false;
     }
 
     size_t parseInt()
     {
-        size_t res = 0;
+        size_t parsedSize = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
             case '0':
-                res = this->statement1Int();
+                parsedSize = this->statement1Int();
             break;
 
             case '1':
@@ -2551,213 +2347,171 @@ public:
             case '7':
             case '8':
             case '9':
-                res = this->statement2Int();
+                parsedSize = this->statement2Int();
             break;
         };
 
-        return res;
+        return parsedSize;
     }
 
     size_t statement1Int()
     {
-        size_t res = 0;
-        size_t initialPos = this->stream->getPos();
-
-        auto ruleName = RuleName::Int;
-        
-        size_t parsedElement = 0;
-        char* streamData = NULL;
         size_t parsedSize = 0;
+        
+        size_t initialStreamPos = this->stream->getPos();
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+        
+        size_t expressionInitialStreamPos = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseString("0", 1);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseString("0", 1);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            
+
+            return parsedSize;
+
         } while (false);
-
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return 0;
-        }
-
-        return res;
+        
+        this->stream->setPos(initialStreamPos);
+        
+        return false;
     }
 
     size_t statement2Int()
     {
-        size_t res = 0;
-        size_t initialPos = this->stream->getPos();
-
-        auto ruleName = RuleName::Int;
-        
-        size_t parsedElement = 0;
-        char* streamData = NULL;
         size_t parsedSize = 0;
+        
+        size_t initialStreamPos = this->stream->getPos();
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+        
+        size_t expressionInitialStreamPos = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseRegexp("19", 2);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseRegexp("19", 2);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
 
             while (true) {
-                streamData = this->stream->getCurrentDataPtr(); 
-                parsedSize = this->systemParseRegexp("09", 2);
-                if (parsedSize == 0) {
-                    break;
-                }
-
-                
-                res += parsedSize;
+                elementInitialStreamPos = this->stream->getPos();
+                elementParsedSize = this->systemParseRegexp("09", 2);
+    
+                isElementParsed = (elementParsedSize != 0);
+                if (!isElementParsed) break;
+                parsedSize += elementParsedSize;
             }
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            
+
+            return parsedSize;
+
         } while (false);
-
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return 0;
-        }
-
-        return res;
+        
+        this->stream->setPos(initialStreamPos);
+        
+        return false;
     }
 
     size_t parseExp()
     {
-        size_t res = 0;
+        size_t parsedSize = 0;
 
         char chr = this->stream->getCurrentSymbol();
         switch (chr) {
             case 'E':
             case 'e':
-                res = this->statement1Exp();
+                parsedSize = this->statement1Exp();
             break;
         };
 
-        return res;
+        return parsedSize;
     }
 
     size_t statement1Exp()
     {
-        size_t res = 0;
-        size_t initialPos = this->stream->getPos();
-
-        auto ruleName = RuleName::Exp;
-        
-        size_t parsedElement = 0;
-        char* streamData = NULL;
         size_t parsedSize = 0;
+        
+        size_t initialStreamPos = this->stream->getPos();
+
+        size_t elementInitialStreamPos = 0;
+        size_t elementParsedSize = 0;
+        bool isElementParsed = false;
+        
+        size_t expressionInitialStreamPos = 0;
+
+        size_t quantifierParsedElementCount = 0;
+        size_t quantifierRequiredElementCount = 0;
+ 
         bool cut = false;  // TODO
 
-        size_t initialElementPos = 0;
-        size_t parsedCount = 0;
-        
-        std::vector<GdlNode*>::iterator outerLast;
-        size_t outerParsedSize = 0;
-        size_t countVal = 0;
-        
-        std::vector<GdlNode*>::iterator lookAheadLast;
-        size_t lookAheadParsedSize;
-        
-        bool isInlineParsed = false;
-
-        bool isParsed = false;
         do {
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseRegexp("EEee", 4);
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseRegexp("EEee", 4);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
 
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->systemParseRegexp("++--", 4);
-            if (! (parsedSize == 0)) {
-                
-                res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->systemParseRegexp("++--", 4);
+
+            isElementParsed = (elementParsedSize != 0);
+            if (isElementParsed) {
+                parsedSize += elementParsedSize;
             }
 
             // ------------------------------------------------
 
-            streamData = this->stream->getCurrentDataPtr(); 
-            parsedSize = this->parseInt();
-            if (parsedSize == 0) {
-                // TODO: cut
-                break;
-            }
-            
-            res += parsedSize;
+            elementInitialStreamPos = this->stream->getPos();
+            elementParsedSize = this->parseInt();
+
+            isElementParsed = (elementParsedSize != 0);
+            if (!isElementParsed) break;
+            parsedSize += elementParsedSize;
 
             // ------------------------------------------------
-            
-            isParsed = true;
-            
+
+            return parsedSize;
+
         } while (false);
-
-        if (!isParsed) {
-            this->stream->setPos(initialPos);
-            return 0;
-        }
-
-        return res;
+        
+        this->stream->setPos(initialStreamPos);
+        
+        return false;
     }
-    
+
     
 };
 
 
 const char* JsonParser::ruleNames[] = {
-    "", "Json","Obj","Pair","Arr","Value","String","Esc","Unicode","Hex","SafeCodePoint","Number","Int","Exp"
+    "", "Json", "Obj", "Pair", "Arr", "Value", "String", "Esc", "Unicode", "Hex", "SafeCodePoint", "Number", "Int", "Exp"
 };
 

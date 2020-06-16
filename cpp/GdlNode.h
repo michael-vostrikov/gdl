@@ -1,51 +1,79 @@
 #include <vector>
+#include <algorithm>
+
+class GdlNode;
+
+class ListDescriptor
+{
+public:
+    size_t offset;
+    size_t count;
+    size_t totalCount;  // with children elements
+
+    ListDescriptor()
+        : offset(0), count(0), totalCount(0)
+    {
+    }
+
+    ListDescriptor(size_t offset, size_t count, size_t totalCount)
+        : offset(offset), count(count), totalCount(totalCount)
+    {
+    }
+};
 
 class GdlNode
 {
+public:
+
+    enum ValueType {VALUE_NULL, VALUE_LIST, VALUE_STRING};
+
 protected:
 
-    uint32_t name;
+    uint32_t ruleName;
 
-    enum {VALUE_LIST, VALUE_STRING} valueType;
+    ValueType valueType;
 
-    std::vector<GdlNode*> listValue;
-    StringDescriptor stringValue;
+    union {
+        ListDescriptor listValue;
+        StringDescriptor stringValue;
+    };
 
 public:
 
-    GdlNode(uint32_t name): name(name), stringValue(""), listValue()
+
+    GdlNode(): ruleName(0), stringValue("")
     {
-        this->valueType = GdlNode::VALUE_LIST;
+        this->valueType = VALUE_NULL;
     }
 
-    GdlNode(uint32_t name, StringDescriptor value): name(name), stringValue(value), listValue()
+    GdlNode(uint32_t ruleName): ruleName(ruleName), stringValue("")
     {
-        this->valueType = GdlNode::VALUE_STRING;
+        this->valueType = VALUE_STRING;
     }
 
-    GdlNode(uint32_t name, std::vector<GdlNode*> value): name(name), stringValue(""), listValue(value)
+    GdlNode(uint32_t ruleName, ListDescriptor listValue): ruleName(ruleName), listValue(listValue)
     {
-        this->valueType = GdlNode::VALUE_LIST;
+        this->valueType = VALUE_LIST;
     }
 
-    GdlNode(const GdlNode& node): name(node.name), listValue(node.listValue), stringValue(node.stringValue)
+    GdlNode(uint32_t ruleName, StringDescriptor stringValue): ruleName(ruleName), stringValue(stringValue)
     {
-        this->valueType = node.valueType;
+        this->valueType = VALUE_STRING;
     }
 
-    uint32_t& getName()
+    uint32_t getRuleName()
     {
-        return this->name;
+        return this->ruleName;
     }
 
-    void setName(uint32_t name)
-    {
-        this->name = name;
-    }
-
-    int getValueType()
+    uint32_t getValueType()
     {
         return this->valueType;
+    }
+
+    ListDescriptor& getListValue()
+    {
+        return this->listValue;
     }
 
     StringDescriptor& getStringValue()
@@ -53,43 +81,37 @@ public:
         return this->stringValue;
     }
 
-    std::vector<GdlNode*>& getListValue()
+    void setListValue(ListDescriptor listValue)
     {
-        return this->listValue;
+        this->valueType = VALUE_LIST;
+        this->listValue = listValue;
     }
 
-    void addToList(GdlNode* element)
+    void setStringValue(StringDescriptor stringValue)
     {
-        this->listValue.push_back(element);
-    }
-
-    void setStringValue(StringDescriptor value)
-    {
-        this->valueType = GdlNode::VALUE_STRING;
-        this->stringValue = value;
-        this->listValue = {};
-    }
-
-    void setListValue(std::vector<GdlNode*> value)
-    {
-        this->valueType = GdlNode::VALUE_LIST;
-        this->stringValue = "";
-        this->listValue = value;
+        this->valueType = VALUE_STRING;
+        this->stringValue = stringValue;
     }
 
     GdlNode* getFirst()
     {
-        auto it = this->listValue.begin();
-        return *it;
+        return this + 1;
     }
 
     GdlNode* get(uint32_t name)
     {
-        for (auto it = this->listValue.begin(); it != this->listValue.end(); ++it) {
-            GdlNode* pNode = *it;
-            if (pNode->name == name) {
-                return pNode;
+        if (this->valueType != VALUE_LIST) {
+            return NULL;
+        }
+
+        auto it = this->getFirst();
+        for (size_t i = 0; i < this->listValue.count; i++) {
+            if (it->ruleName == name) {
+                return it;
             }
+
+            auto diff = ((*it).valueType == VALUE_LIST ? (*it).listValue.totalCount : 1);
+            it += diff;
         }
 
         return NULL;
@@ -98,52 +120,20 @@ public:
     std::vector<GdlNode*> getArray(uint32_t name)
     {
         std::vector<GdlNode*> arr;
-        for (auto it = this->listValue.begin(); it != this->listValue.end(); ++it) {
-            GdlNode* pNode = *it;
-            if (pNode->name == name) {
-                arr.push_back(pNode);
+        if (this->valueType != VALUE_LIST) {
+            return arr;
+        }
+
+        auto it = this->getFirst();
+        for (size_t i = 0; i < this->listValue.count; i++) {
+            if (it->ruleName == name) {
+                arr.push_back(it);
             }
+
+            auto diff = ((*it).valueType == VALUE_LIST ? (*it).listValue.totalCount : 1);
+            it += diff;
         }
 
         return arr;
-    }
-
-    size_t getToStringSize()
-    {
-        if (this->valueType == VALUE_STRING) {
-            return this->stringValue.getSize();
-        }
-
-        size_t size = 0;
-        for (auto it = this->listValue.begin(); it != this->listValue.end(); ++it) {
-            GdlNode* pNode = *it;
-            size += pNode->getToStringSize();
-        }
-
-        return size;
-    }
-
-    StringDescriptor toString()
-    {
-        size_t size = this->getToStringSize();
-        char* data = new char[size];
-
-        if (this->valueType == VALUE_STRING) {
-            memcpy(data, this->stringValue.getDataPtr(), size);
-        }
-        else {
-            size_t pos = 0;
-            for (auto it = this->listValue.begin(); it != this->listValue.end(); ++it) {
-                GdlNode* pNode = *it;
-
-                StringDescriptor innerStr = pNode->toString();
-                memcpy(data + pos, innerStr.getDataPtr(), innerStr.getSize());
-                pos += innerStr.getSize();
-
-                delete[] innerStr.getDataPtr();
-            }
-        }
-
-        return StringDescriptor(data, size);
     }
 };
